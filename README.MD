@@ -11,6 +11,9 @@ For the audio portion of this project, I'm using the Allegro 4.2 multimedia libr
 
 The sound or music (AUDIO.WAV file) must be encoded for now as a WAV file for now, idealy compressed into: 11025Hz, in 8 bit unsigned mono with the SBPLAY.EXE tool from Creative (Abandonware) for speed up decoding the audio file when playing the video.
 
+ABPLAY25 that contain SBPLAY.EXE (player and converter) link here:
+https://archive.org/details/msdos_festival_ABPLAY25
+
 ## Workflow
 1. Export raw video file as series of PNG files (must be 320x200) at a reasonable FPS (less than 70fps). Exported files must be in format prefix_000000.png in ascending order.
 
