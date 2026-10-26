@@ -1,5 +1,10 @@
 # VGAPlay
-A VGA video player and format converter for DOS systems using DJGPP compiler with Allegro 4.2 library.
+A VGA video player and format converter for DOS systems.
+
+## Description
+This is a Video Player compatible with DOS systems (MS-DOS, FreeDOS, DOSBox Emulator) written in C using DJGPP compiler with Allegro 4.2 library.
+
+This Video Player is based on PNG files packed into a binary file and compressed with the LZ4 compression method. The LZ4 is a lossless data compression algorithm optimized for extremely fast compression and decompression speeds.
 
 ### [Demonstration Video](https://www.youtube.com/watch?v=WeJYnQct9wI)
 
