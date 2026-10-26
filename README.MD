@@ -1,6 +1,6 @@
 # VGAPlay
 A VGA video player (fork of DOSVideoPlayer by Netdex) and format converter for DOS systems.
-### [Demonstration Video](https://www.youtube.com/watch?v=WeJYnQct9wI)
+### [Demonstration Video](https://www.youtube.com/watch?v=j21uid9JJi8)
 
 ## Description
 This is a Video Player compatible with DOS systems (MS-DOS, FreeDOS, DOSBox Emulator) written in C using DJGPP compiler with Allegro 4.2 library.
