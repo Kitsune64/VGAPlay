@@ -1,25 +1,15 @@
 # VGAPlay
 A VGA video player and format converter for DOS systems.
+### [Demonstration Video](https://www.youtube.com/watch?v=WeJYnQct9wI)
 
 ## Description
 This is a Video Player compatible with DOS systems (MS-DOS, FreeDOS, DOSBox Emulator) written in C using DJGPP compiler with Allegro 4.2 library.
 
 This Video Player is based on PNG files packed into a binary file and compressed with the LZ4 compression method. The LZ4 is a lossless data compression algorithm optimized for extremely fast compression and decompression speeds.
 
-### [Demonstration Video](https://www.youtube.com/watch?v=WeJYnQct9wI)
+For the audio portion of this project, I'm using the Allegro 4.2 multimedia library, which is compatible with DOS. This video player is therefore compatible with the Sound Blaster 16 sound card, an older and very common model. This card can be easily emulated using DOSBox, Nuked, or any other emulator dedicated to Sound Blaster cards.
 
-## FAQ
-**Q:** What is this?<br>
-**A:** A small video player written in C for DOS. As of currently, it only supports a single video/audio format, created specifically for this application. Converters are included in this repository.
-
-**Q:** Why is the audio so terrible?<br>
-**A:** I wanted it to work on modern computers, and modern sound cards are quite complicated to set up, so my only option was the internal speaker.
-
-**Q:** Why is the video so terrible?<br>
-**A:** I'm sticking with VGA mode 13h, so enjoy it in its 240 color, 320x200 pixel glory.
-
-**Q:** How do I run this?<br>
-**A:** Try to read some of the documentation, or you could just email me.
+The sound or music (AUDIO.WAV file) must be encoded for now as a WAV file for now, idealy compressed into: 11025Hz, in 8 bit unsigned mono with the SBPLAY.EXE tool from Creative (Abandonware) for speed up decoding the audio file when playing the video.
 
 ## Workflow
 1. Export raw video file as series of PNG files (must be 320x200) at a reasonable FPS (less than 70fps). Exported files must be in format prefix_000000.png in ascending order.
