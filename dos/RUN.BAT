@@ -1,3 +1,3 @@
 cd bin
-badapple
+VGAPLAY.EXE
 cd ../
