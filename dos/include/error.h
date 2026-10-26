@@ -9,7 +9,6 @@
 #define INCLUDE_ERROR_H_
 
 #include <stdio.h>
-#include "vga.h"
 
 void raise_error(const char *code);
 

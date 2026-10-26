@@ -15,27 +15,31 @@
 #define ERROR_DECODE "Decode Error"
 
 struct video_header {
-	word frame_count;
-	byte frame_rate;
+    word frame_count;
+    byte frame_rate;
 };
 
 struct audio_header {
-	word frame_count;
-	byte frame_rate;
+    word frame_count;
+    byte frame_rate;
 };
 
 struct audio_frame {
-	word frame;
-	byte action;
-	word frequency;
+    word frame;
+    byte action;
+    word frequency;
 };
 
 struct video_header decode_video_header(FILE *file);
-void decode_video_frame(FILE *file, byte* palette, byte* palette_size,
-		byte* dest);
-void decode_video_reset();
+
+void decode_video_frame(FILE *file, byte *palette,
+                        int *palette_size, byte *dest);
+
+void decode_video_reset(void);
 
 struct audio_header decode_audio_header(FILE *file);
+
 struct audio_frame decode_audio_frame(FILE *file);
 
 #endif
+
