@@ -1,5 +1,5 @@
 # VGAPlay
-A VGA video player and format converter for DOS systems.
+A VGA video player (fork of DOSVideoPlayer by Netdex) and format converter for DOS systems.
 ### [Demonstration Video](https://www.youtube.com/watch?v=WeJYnQct9wI)
 
 ## Description
