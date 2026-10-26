@@ -4,140 +4,190 @@
 #include <pc.h>
 #include <time.h>
 #include <string.h>
+#include <allegro.h>
 
+/* En-têtes du décodeur vidéo DOSVideoPlayer */
 #include "types.h"
-#include "vga.h"
 #include "util.h"
 #include "decoder.h"
-#include "keyboard.h"
-#include "font.h"
 #include "wav.h"
 
-#define MSPERSEC 1000
+#define VIDEO_BUF_SZ        1
 
-#define SPEAKER_PORT 	0x61
-#define PIT_CONTROL 	0x43
-#define PIT_CHANNEL_2	0x42
-#define PIT_FREQ		0x1234DD
-
-#define AUDIO_BUF_SZ 		65536
-#define VIDEO_BUF_SZ		1
-
-extern byte *VGA_BUFFER;
-extern byte *DVGA;
-
-byte mute = 0;
+/* Variables globales du lecteur vidéo */
 byte skip = 0;
-byte vsync = 0;
 long long shift = 0;
 
-byte video_data[VGA_WIDTH * VGA_HEIGHT * VIDEO_BUF_SZ];
+byte video_data[320 * 200 * VIDEO_BUF_SZ];
 byte palette_data[768 * VIDEO_BUF_SZ];
-byte palette_sizes[VIDEO_BUF_SZ];
-byte audio_data[AUDIO_BUF_SZ];
+int palette_sizes[VIDEO_BUF_SZ];
 
-int main() {
-	hook_keyb_handler();
-	vga_init();
-	vga_set_mode(VGA_256_COLOR_MODE);
+/* =========================================================================
+   LECTURE DE LA CINÉMATIQUE SYNCHRONISEE AUTOMATIQUEMENT
+   Retourne 1 si l'utilisateur a appuyé sur ESC pour skip, 0 sinon.
+   ========================================================================= */
+int play_lz4_cinematic(const char *video_path, const char *audio_path) {
+    FILE* video_file = fopen(video_path, "rb");
+    if (!video_file) return 0;
 
-	FILE* video_file = fopen("video.bin", "rb");
-	struct video_header vh = decode_video_header(video_file);
-	decode_video_reset();
-	font_text(0, 0, ">>", 1);
-	int last_video_frame = 0;
+    struct video_header vh = decode_video_header(video_file);
+    decode_video_reset();
 
-	/* AUDIO EVENT SETUP */
-	FILE *wav_file = fopen("audio.wav", "rb");
-	struct wav_header wh = wav_readheader(wav_file);
+    // Chargement de l'audio via Allegro pour une lecture autonome
+    SAMPLE *sound_track = load_wav(audio_path);
+    if (!sound_track) {
+        fclose(video_file);
+        return 0;
+    }
 
-	// calculate timing data
-	int clocks_per_sample = PIT_FREQ / wh.SampleRate;
-	byte quantmap[256];
-	for (int i = 0; i < 256; i++)
-		quantmap[i] = i * clocks_per_sample / 255;
+    // Passage en Mode 13h linéaire d'Allegro (320x200, 8-bit)
+    if (set_gfx_mode(GFX_VGA, 320, 200, 0, 0) != 0) {
+        destroy_sample(sound_track);
+        fclose(video_file);
+        return 0;
+    }
 
-	// connect PIT timer to speaker
-	outportb(PIT_CONTROL, 0x90);
-	outportb(SPEAKER_PORT, inportb(SPEAKER_PORT) | 3);
-	/* END AUDIO EVENT SETUP */
+    // Création du tampon mémoire intermédiaire en RAM
+    BITMAP *ram_buffer = create_bitmap(320, 200);
+    if (!ram_buffer) {
+        destroy_sample(sound_track);
+        fclose(video_file);
+        return 0;
+    }
 
-	// read, decode, evaluate
-	uclock_t last_sec = uclock();
-	long long uclockspersample = UCLOCKS_PER_SEC / wh.SampleRate;
-	int video_offset = 0;
+    PALETTE allegro_pal;
 
-	int frame_ratio = wh.SampleRate / vh.frame_rate;
+    // Calcul du temps exact par image en fonction du framerate d'origine
+    int fps = vh.frame_rate ? vh.frame_rate : 30;
+    long long uclocks_per_frame = UCLOCKS_PER_SEC / fps;
 
-	for (int f = 0; f < wh.Subchunk2Size; f++) {
-		last_sec = uclock();
+    // Lancement simultané de l'audio et enregistrement du point zéro temporel
+    play_sample(sound_track, 255, 128, 1000, 0);
+    uclock_t start_time = uclock();
 
-		// video processing
-		if (f % frame_ratio == 0) {
-			// decode new frames
-			if (video_offset % VIDEO_BUF_SZ == 0) {
-				for (int i = 0;
-						i < VIDEO_BUF_SZ && video_offset + i < vh.frame_count;
-						i++) {
-					decode_video_frame(video_file, palette_data + i * 768,
-							palette_sizes + i,
-							video_data + i * VGA_WIDTH * VGA_HEIGHT);
-				}
-			}
-			skip = key_pressed(0x1d);
+    // Boucle de lecture ancrée sur le temps réel écoulé pour éviter le décalage audio/vidéo
+    int frame = 0;
+    int skipped = 0;
+    
+    while (frame < vh.frame_count) {
+        // Si on appuie sur ESC, on interrompt immédiatement la cinématique
+        if (key[KEY_ESC]) {
+            skipped = 1;
+            break;
+        }
 
-			if (key_pressed(0x01))	// exit condition
-				break;
+        if (key[KEY_LSHIFT] || key[KEY_RSHIFT] || key[KEY_LCONTROL]) skip = 1; else skip = 0;
 
-			if (key_pressed(0x10))
-				shift++;
-			if (key_pressed(0x1E))
-				shift--;
-			video_offset++;
-		}
+        uclock_t current_time = uclock();
+        long long elapsed_uclocks = current_time - start_time;
+        
+        // Calculer quelle image *devrait* s'afficher à cet instant précis
+        int target_frame = (int)((elapsed_uclocks * fps) / UCLOCKS_PER_SEC);
 
-		// only change palette during vertical retraces
-		int vstate = inp(INPUT_STATUS_1) & VRETRACE;
-		if (vstate) {
-			if (vsync == 1) {
-				int modoffset = video_offset % VIDEO_BUF_SZ;
-				if (last_video_frame != video_offset) {
-					vga_set_palette(palette_data + modoffset * 768,
-							*(palette_sizes + modoffset));
-					memcpy(DVGA,
-							video_data + modoffset * VGA_WIDTH * VGA_HEIGHT,
-							VGA_WIDTH * VGA_HEIGHT);
-					printf("\rF%d S%lld", f, shift);
-					last_video_frame = video_offset;
-				}
-			}
-			vsync = 0;
-		} else {
-			vsync = 1;
-		}
+        // Si la vidéo est en retard par rapport au temps écoulé, on décode sans afficher (drop frame) pour rattraper
+        if (frame < target_frame) {
+            decode_video_frame(video_file, palette_data, palette_sizes, video_data);
+            frame++;
+            continue;
+        }
 
-		// audio processing
-		if (f % AUDIO_BUF_SZ == 0) {
-			wav_readdata(wav_file, audio_data, 0, AUDIO_BUF_SZ);
-		}
+        // Décodage de la trame vidéo courante
+        decode_video_frame(video_file, palette_data, palette_sizes, video_data);
 
-		outportb(PIT_CHANNEL_2, quantmap[audio_data[f % AUDIO_BUF_SZ]]);
+        byte *raw_pal = palette_data;
+        int colors_to_set = *palette_sizes;
 
-		if (!skip) {
-			uclock_t trigger = last_sec + uclockspersample + shift;
-			while (uclock() < trigger) {
-				asm("");
-				// prevent the compiler from optimizing this away
-			}
-		}
+        /* Initialiser les 256 entrées */
+        for (int c = 0; c < 256; c++) {
+            allegro_pal[c].r = 0;
+            allegro_pal[c].g = 0;
+            allegro_pal[c].b = 0;
+        }
 
-	}
-	fclose(video_file);
-	fclose(wav_file);
+        /* Charger les couleurs de la trame */
+        for (int c = 0; c < colors_to_set && c < 256; c++) {
+            allegro_pal[c].r = raw_pal[c * 3] >> 2;
+            allegro_pal[c].g = raw_pal[c * 3 + 1] >> 2;
+            allegro_pal[c].b = raw_pal[c * 3 + 2] >> 2;
+        }
 
-	// reset speaker
-	outportb(SPEAKER_PORT, inportb(SPEAKER_PORT) & 0xFC);
-	outportb(PIT_CONTROL, 0xB6);
-	vga_set_mode(TEXT_MODE);
-	return 0;
+        set_palette(allegro_pal);
+
+        // --- AFFICHAGE DE LA FRAME ---
+        if (ram_buffer->line[1] - ram_buffer->line[0] == 320) {
+            memcpy(ram_buffer->line[0], video_data, 64000);
+        } else {
+            for (int y = 0; y < 200; y++) {
+                memcpy(ram_buffer->line[y], video_data + (y * 320), 320);
+            }
+        }
+
+        // Affichage direct du buffer RAM vers l'écran
+        blit(ram_buffer, screen, 0, 0, 0, 0, 320, 200);
+        
+        // --- SYNCHRONISATION SOUPLE ---
+        uclock_t frame_target_time = start_time + ((frame + 1) * uclocks_per_frame);
+        if (!skip) {
+            while (uclock() < frame_target_time) {
+                rest(0); // Cède la main au système sans bloquer rigidement
+            }
+        }
+
+        frame++;
+    }
+
+    // Nettoyage propre
+    destroy_bitmap(ram_buffer);
+    stop_sample(sound_track);
+    destroy_sample(sound_track);
+    fclose(video_file);
+
+    clear_to_color(screen, 0);
+    return skipped;
 }
+
+/* =========================================================================
+   POINT D'ENTRÉE PRINCIPAL DE VOTRE MOTEUR RPG
+   ========================================================================= */
+int main(void) {
+    if (allegro_init() != 0) {
+        printf("Erreur d'initialisation d'Allegro !\n");
+        return 1;
+    }
+
+    install_keyboard();
+    install_timer();
+
+    if (install_sound(DIGI_AUTODETECT, MIDI_AUTODETECT, NULL) != 0) {
+        printf("Avertissement : Le système audio (WAV/MIDI) n'est pas disponible !\n");
+    }
+
+    set_color_depth(8);
+
+    // --- LECTURE DE LA CINÉMATIQUE ---
+    if (exists("VIDEO.BIN") && exists("AUDIO.WAV")) {
+        // play_lz4_cinematic va s'arrêter d'elle-même si ESC est pressé
+        play_lz4_cinematic("VIDEO.BIN", "AUDIO.WAV");
+    }
+
+    // --- LANCEMENT DU MOTEUR RPG EN MODE X (320x240) ---
+    // S'exécutera directement, que la vidéo soit allée jusqu'au bout ou qu'on l'ait stoppée avec ESC.
+    if (set_gfx_mode(GFX_MODEX, 320, 240, 0, 0) != 0) {
+        printf("Erreur : Impossible d'activer le Mode X!\n");
+        return 1;
+    }
+
+    BITMAP *game_buffer = create_bitmap(320, 240);
+
+    while (!key[KEY_ESC]) {
+        clear_bitmap(game_buffer);
+        textout_centre_ex(game_buffer, font, "MOTEUR EN MODE X (320x240)", 160, 100, 15, -1);
+        textout_centre_ex(game_buffer, font, "CINEMATIQUE LECTURE OK", 160, 120, 14, -1);
+        blit(game_buffer, screen, 0, 0, 0, 0, 320, 240);
+        rest(10); 
+    }
+
+    destroy_bitmap(game_buffer);
+    return 0;
+}
+END_OF_MAIN()
