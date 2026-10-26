@@ -1,9 +1,7 @@
 # VGAPlay
-A VGA video player and format converter for DOS systems
-(This project is a work-in-progress.)
+A VGA video player and format converter for DOS systems using DJGPP compiler with Allegro 4.2 library.
 
-### [Demonstration Video](https://www.youtube.com/watch?v=WeJYnQct9wI)  
-#### [Alternate Demonstration Video](https://streamable.com/yblq9)
+### [Demonstration Video](https://www.youtube.com/watch?v=WeJYnQct9wI)
 
 ## FAQ
 **Q:** What is this?<br>
