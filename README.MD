@@ -5,7 +5,7 @@ A VGA video player (fork of DOSVideoPlayer by Netdex) and format converter for D
 ## Description
 This is a Video Player compatible with DOS systems (MS-DOS, FreeDOS, DOSBox Emulator) written in C using DJGPP compiler with Allegro 4.2 library.
 
-You can find a full set of DJGPP compiler environment for DOS with Allegro 4.2 AND sound Blaster fix here:<br>
+You can find a full set of DJGPP compiler environment for DOS with Allegro 4.2 AND Sound Blaster fix here:<br>
 https://www.mrdictionary.net/allegro/
 
 This Video Player is based on PNG files packed into a binary file and compressed with the LZ4 compression method. The LZ4 is a lossless data compression algorithm optimized for extremely fast compression and decompression speeds.
