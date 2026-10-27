@@ -24,3 +24,11 @@ To ensure smooth playback without buffering issues or stuttering under MS-DOS, t
 You can easily convert any MP3, MP4, or WAV file using **FFmpeg**:
 ```bash
 ffmpeg -i input.mp4 -ar 11025 -ac 1 -c:a pcm_u8 -fflags +bitexact -map_metadata -1 audio_dos.wav
+
+## Workflow & Binary Generation
+
+    Prepare Frames: Export your source video as a series of PNG images (strictly 320x200 resolution) named in ascending order (e.g., frame_000001.png, frame_000002.png).
+
+    Compile the Generator: Compile main.c to generate the packaging utility.
+
+    Run the Generator: Execute the program providing your directory, output name, frame count, FPS, and max colors limit:
