@@ -19,7 +19,7 @@ COMMON_OBJ = $(addprefix $(ODIR)/, $(COMMON_SOURCES:.c=.o))
 
 # Objets spécifiques pour chaque exécutable
 MAIN_OBJ = $(COMMON_OBJ) $(ODIR)/main.o
-VERIFY_OBJ = $(COMMON_OBJ) $(ODIR)/verify_v.o
+VERIFY_OBJ = $(COMMON_OBJ) $(ODIR)/verify.o
 
 # Cible par défaut : compile les deux programmes à la fois
 all: $(BDIR)/$(EXEC_FILE) $(BDIR)/$(VERIFY_FILE)
