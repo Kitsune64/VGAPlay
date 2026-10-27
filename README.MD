@@ -40,7 +40,7 @@ Usage arguments: <DIRECTORY> <PREFIX> <EXTENSION> <FRAME_COUNT> <FPS> <MAX_COLOR
 4. Result: The tool automatically handles median-cut quantization, palette optimization, and dependent LZ4 stream compression, outputting a ready-to-use VIDEO.BIN file alongside your audio track.
 
 ## Components & Data Structure
-# Movie File Format (.BIN)
+### Movie File Format (.BIN)
 ```C
 struct video_header {
     unsigned short frame_count;   // Total number of frames in the video (2 bytes)
@@ -75,7 +75,7 @@ struct video_binary {
     struct frame_data_block *frames;
 };
 ```
-# Verification Tool (verificator.c)
+## Verification Tool (verificator.c)
 
 A verification utility is provided to test and debug generated .BIN packages.
 * Analysis Mode: Checks structural integrity, index table mapping, and compression ratios.
