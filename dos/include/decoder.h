@@ -32,14 +32,16 @@ struct audio_frame {
 
 struct video_header decode_video_header(FILE *file);
 
-void decode_video_frame(FILE *file, byte *palette,
+void decode_video_frame(FILE *file, int frame_index, byte *palette,
                         int *palette_size, byte *dest);
 
 void decode_video_reset(void);
+
+/* ADDED: Declaration of the cleanup function to resolve the main.c compiler error */
+void decode_video_free(void);
 
 struct audio_header decode_audio_header(FILE *file);
 
 struct audio_frame decode_audio_frame(FILE *file);
 
-#endif
-
+#endif /* DECODER_H_ */
