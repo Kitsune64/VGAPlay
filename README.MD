@@ -119,4 +119,4 @@ struct frame_data_block {
 To compile and run the player (main.c) natively or test it under MS-DOS:
 * **Compiler:** DJGPP (GCC port for DOS)
 * **Multimedia Library:** Allegro 4.2 library configured with Sound Blaster support.
-* **Note:** You can find a complete, pre-configured DJGPP environment bundle for DOS with Allegro 4.2 and Sound Blaster fixes at mrdictionary.net.
+* **Note:** You can find a complete, pre-configured DJGPP environment bundle for DOS with Allegro 4.2 and Sound Blaster fixes at |mrdictionary.net](https://mrdictionary.net/allegro/).
