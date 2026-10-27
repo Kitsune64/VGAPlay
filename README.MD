@@ -37,25 +37,38 @@ set FPS=[frames per second]
 ### Data Encoding
 #### Movie File Format
 ``` c
-/* 
- * Video is stored in a series of LZ4 compressed 256-color bitmaps 
- * We update the palette every frame
- */
-
-/* LZ4 compressed frame */
-struct frame_data {
-  unsigned char palette_size;   // palette size minus one, since 256 is the limit
-  unsigned char *palette;       // 18-bit color palette
-  int size;
-  unsigned char *data;
+struct video_header {
+    unsigned short frame_count;   // Total number of frames in the video (2 bytes)
+    unsigned char  fps;           // Frames per second / Frame rate (1 byte)
+    unsigned char  padding;       // Padding byte for 32-bit alignment (1 byte)
 };
 
-struct video_data {
-  unsigned short frame_count;   // total frame count of entire movie
-  unsigned char frame_rate;     // frames to display per second
-  struct frame_data *frames;    // compressed frame data
-} video_binary;
+// The index table is located right after the global header.
+// It contains 'frame_count' signed 4-byte integers (int32_t) representing 
+// the compressed size (in bytes) of each frame's LZ4 data.
+typedef int32_t index_table_entry; // Size = frame_count * 4 bytes
 
+struct palette_entry {
+    unsigned char r; // Red component (0-255)
+    unsigned char g; // Green component (0-255)
+    unsigned char b; // Blue component (0-255)
+};
+
+struct frame_data_block {
+    // DOS Fixed Palette Optimization: Systematically flushes a uniform 768-byte packet 
+    // (256 colors * 3 bytes). Unused colors are padded with zeros (0,0,0).
+    struct palette_entry palette[256]; 
+    
+    int size;                     // Size stored in the index table (LZ4 compressed size)
+    unsigned char *data;          // Pixel index data (320x200 = 64,000 raw pixels) 
+                                  // compressed via LZ4 in dependent mode (LZ4_compress_fast_continue)
+};
+
+struct video_binary {
+    struct video_header header;
+    int32_t *index_table;
+    struct frame_data_block *frames;
+};
 ```
 
 Tools for compressing video files are in conv/\_comp
