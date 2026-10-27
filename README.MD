@@ -71,8 +71,9 @@ make clean
     Run FramePack specifying the source directory, output prefix, extension, frame count, frames-per-second, and max color depth:
 ```bash
 ./bin/Linux/FramePack ./PNG video PNG 2853 15 256
-```
+
 Usage syntax: <DIRECTORY> <PREFIX> <EXTENSION> <FRAME_COUNT> <FPS> <MAX_COLORS>
+```
 3. **Verify the Package:**
 You can inspect the integrity of the generated video.BIN file using the host verificator:
 * **Analysis Mode:**
