@@ -115,7 +115,7 @@ struct frame_data_block {
                                   // compressed via LZ4 in dependent stream mode (LZ4_compress_fast_continue)
 };
 ```
-## Compilation Requirements for DOS
+## Compilation Requirements for VGAPlay on DOS
 To compile and run the player (main.c) natively or test it under MS-DOS:
 * **Compiler:** DJGPP (GCC port for DOS)
 * **Multimedia Library:** Allegro 4.2 library configured with Sound Blaster support.
