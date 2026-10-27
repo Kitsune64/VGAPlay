@@ -28,5 +28,62 @@ ffmpeg -i input.mp4 -ar 11025 -ac 1 -c:a pcm_u8 -fflags +bitexact -map_metadata 
 ## Workflow & Binary Generation
 
 1. Prepare Frames: Export your source video as a series of PNG images (strictly 320x200 resolution) named in ascending order (e.g., frame_000001.png, frame_000002.png).
+
 2. Compile the Generator: Compile main.c to generate the packaging utility.
+
 3. Run the Generator: Execute the program providing your directory, output name, frame count, FPS, and max colors limit:
+```bash
+./main ./PNG video PNG 2853 15 256
+```
+Usage arguments: <DIRECTORY> <PREFIX> <EXTENSION> <FRAME_COUNT> <FPS> <MAX_COLORS>
+
+4. Result: The tool automatically handles median-cut quantization, palette optimization, and dependent LZ4 stream compression, outputting a ready-to-use VIDEO.BIN file alongside your audio track.
+
+## Components & Data Structure
+# Movie File Format (.BIN)
+```C
+struct video_header {
+    unsigned short frame_count;   // Total number of frames in the video (2 bytes)
+    unsigned char  fps;           // Frames per second / Frame rate (1 byte)
+    unsigned char  padding;       // Padding byte for 32-bit alignment (1 byte)
+};
+
+// The index table is located right after the global header.
+// It contains 'frame_count' signed 4-byte integers (int32_t) representing 
+// the compressed size (in bytes) of each frame's LZ4 data block.
+typedef int32_t index_table_entry; // Size = frame_count * 4 bytes
+
+struct palette_entry {
+    unsigned char r; // Red component (0-255)
+    unsigned char g; // Green component (0-255)
+    unsigned char b; // Blue component (0-255)
+};
+
+struct frame_data_block {
+    // DOS Fixed Palette Optimization: Systematically flushes a uniform 768-byte packet 
+    // (256 colors * 3 bytes). Unused colors are padded with zeros (0,0,0).
+    struct palette_entry palette[256]; 
+    
+    int size;                     // Size stored in the index table (LZ4 compressed size)
+    unsigned char *data;          // Pixel index data (320x200 = 64,000 raw pixels) 
+                                  // compressed via LZ4 in dependent stream mode (LZ4_compress_fast_continue)
+};
+
+struct video_binary {
+    struct video_header header;
+    int32_t *index_table;
+    struct frame_data_block *frames;
+};
+```
+# Verification Tool (verificator.c)
+
+A verification utility is provided to test and debug generated .BIN packages.
+* Analysis Mode: Checks structural integrity, index table mapping, and compression ratios.
+```bash
+./verificator video.bin
+```
+
+* Extraction Mode: Decompresses and extracts a specific frame directly to a PNG file for visual inspection.
+```bash
+./verificator video.bin 150 frame_150.png
+```
