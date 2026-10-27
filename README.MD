@@ -1,46 +1,91 @@
 # VGAPlay
 
-A VGA video player (fork of DOSVideoPlayer by Netdex) and format converter for DOS systems.
+A high-performance VGA video player (fork of *DOSVideoPlayer* by Netdex) and multi-platform asset packaging suite designed for DOS systems (MS-DOS, FreeDOS, DOSBox Emulator).
 
-### [Demonstration Video (Workflow of the new version on Linux and Dosbox-X Emulator)](https://www.youtube.com/watch?v=j21uid9JJi8)
+### [Demonstration Video (Workflow of the new version on Linux and DOSBox-X)](https://www.youtube.com/watch?v=j21uid9JJi8)
 
 ## Description
 
-This is a Video Player compatible with DOS systems (MS-DOS, FreeDOS, DOSBox Emulator) written in C using the DJGPP compiler with the Allegro 4.2 library.
+VGAPlay allows you to stream smooth, synchronized video and audio content on retro DOS hardware or emulators. The project is split into two main parts:
+1. **The Host Tools (Linux / Windows):** A set of conversion scripts, a multi-platform compiler suite (`Makefile`), a powerful frame packager (`FramePack`), and verification tools to inspect generated binary packages.
+2. **The DOS Player (`main.c`):** Written in C using the DJGPP compiler and the Allegro 4.2 library, running natively in VGA Mode 13h (320x200, 8-bit indexed color).
 
-You can find a full set of DJGPP compiler environment for DOS with Allegro 4.2 AND Sound Blaster fix here:  
-https://www.mrdictionary.net/allegro/
+The player reads a custom binary container (`.BIN`) generated from a sequence of PNG frames. Frames are quantized using a median-cut algorithm, mapped to an 8-bit palette, and compressed using **LZ4 dependent stream compression** for fast real-time decompression under DOS constraints.
 
-The player reads a custom binary file (`.BIN`) generated from a series of PNG images. The frames are processed, converted into an 8-bit indexed color format, and compressed using **LZ4 dependent stream compression** to achieve high decompression speeds under DOS.
+---
 
-For the audio portion, the project relies on the Allegro 4.2 multimedia library, compatible with the Sound Blaster 16 sound card (emulated seamlessly in DOSBox, Nuked, etc.). 
+## Project Structure & Components
+
+### 1. Host Conversion & Packaging Tools
+* **`FramePack.c` (Core Packager):** Takes a directory of PNG frames, computes optimized 256-color palettes using Median-Cut quantization, compresses frame buffers using LZ4 dependent streams, and bundles everything into an optimized `.BIN` file.
+* **`convert_dos.sh` / `convert_dos.bat`:** Helper scripts utilizing **FFmpeg** to convert raw video or audio inputs into the required DOS-compatible PCM format (`11025 Hz, 8-bit unsigned mono`).
+* **`extract_frames.sh`:** A Bash pipeline script that extracts frames from an MP4 video, resizes/pads them to 320x200 pixels, applies Floyd-Steinberg dithering, and outputs indexed PNG frames ready for packaging.
+
+### 2. Verification & Debugging Utilities
+* **`verificator.c` (Host Verificator):** A multi-function utility compiled alongside `FramePack` to check `.BIN` structural integrity, analyze compression ratios, and extract specific frames back into PNG format for visual QA.
+* **`verify.c` (DOS Verification Tool):** A target diagnostic tool designed to run or cross-check stream decoding stability and catch potential decompression errors block-by-block.
+
+### 3. Target DOS Player
+* **`main.c` (VGAPlay / RPG Engine Integration):** The main DOS executable that initializes the Sound Blaster audio track via Allegro, streams the `VIDEO.BIN` file in real-time, synchronizes frame delivery using hardware clocks, and seamlessly transitions into a Mode X game loop once playback finishes.
+
+---
 
 ## Audio Requirements
 
-To ensure smooth playback without buffering issues or stuttering under MS-DOS, the external audio track (`.WAV`) must be pre-converted to:
+To ensure smooth playback without buffering issues or audio stuttering under MS-DOS, audio tracks (`.WAV`) must adhere to strict parameters:
 * **Format:** PCM 8-bit unsigned mono (`pcm_u8`)
 * **Sample Rate:** 11025 Hz (recommended for optimal performance)
 
-You can easily convert any MP3, MP4, or WAV file using **FFmpeg**:
+You can convert any standard audio or video file using the provided helper scripts or directly via **FFmpeg**:
 ```bash
 ffmpeg -i input.mp4 -ar 11025 -ac 1 -c:a pcm_u8 -fflags +bitexact -map_metadata -1 audio_dos.wav
 ```
-## Workflow & Binary Generation
+## Building the Suite (Host Side)
 
-1. Prepare Frames: Export your source video as a series of PNG images (strictly 320x200 resolution) named in ascending order (e.g., frame_000001.png, frame_000002.png).
+A comprehensive Makefile is provided to compile FramePack and the host Verificator for both Linux and Windows (using MinGW cross-compilation).
 
-2. Compile the Generator: Compile main.c to generate the packaging utility.
-
-3. Run the Generator: Execute the program providing your directory, output name, frame count, FPS, and max colors limit:
+* Build everything (Linux & Windows targets):
 ```bash
-./main ./PNG video PNG 2853 15 256
+make all
 ```
-Usage arguments: <DIRECTORY> <PREFIX> <EXTENSION> <FRAME_COUNT> <FPS> <MAX_COLORS>
 
-4. Result: The tool automatically handles median-cut quantization, palette optimization, and dependent LZ4 stream compression, outputting a ready-to-use VIDEO.BIN file alongside your audio track.
+* Build Linux binaries only (./bin/Linux/):
+```bash
+make linux
+```
 
-## Components & Data Structure
-### Movie File Format (.BIN)
+* Cross-compile Windows binaries only (./bin/Windows/):
+```bash
+make windows
+```
+
+* Clean compiled artifacts:
+```bash
+make clean
+```
+
+## Workflow: From Video to DOS Binary
+1. **Prepare and Extract Frames:**
+    Use the extraction script or FFmpeg to output a sequence of 320x200 PNG images into a local folder (e.g., ./PNG/), named in ascending order (G_000000.PNG, G_000001.PNG, etc.).
+2. **Generate the Video Binary (.BIN):*
+    Run FramePack specifying the source directory, output prefix, extension, frame count, frames-per-second, and max color depth:
+```bash
+./bin/Linux/FramePack ./PNG video PNG 2853 15 256
+```
+Usage syntax: <DIRECTORY> <PREFIX> <EXTENSION> <FRAME_COUNT> <FPS> <MAX_COLORS>
+3. **Verify the Package:**
+You can inspect the integrity of the generated video.BIN file using the host verificator:
+* **Analysis Mode:**
+```bash
+./bin/Linux/Verificator video.BIN
+```
+* **Extraction Mode (Export frame 150 to PNG):**
+```bash
+./bin/Linux/Verificator video.BIN 150 frame_150.png
+```
+4. **Run on DOS / DOSBox:**
+    Place VIDEO.BIN and your converted AUDIO.WAV file in your target DOS environment directory and execute the player.
+## Movie File Format (.BIN) Specification
 ```C
 struct video_header {
     unsigned short frame_count;   // Total number of frames in the video (2 bytes)
@@ -48,7 +93,7 @@ struct video_header {
     unsigned char  padding;       // Padding byte for 32-bit alignment (1 byte)
 };
 
-// The index table is located right after the global header.
+// The index table is located immediately after the global header.
 // It contains 'frame_count' signed 4-byte integers (int32_t) representing 
 // the compressed size (in bytes) of each frame's LZ4 data block.
 typedef int32_t index_table_entry; // Size = frame_count * 4 bytes
@@ -68,22 +113,9 @@ struct frame_data_block {
     unsigned char *data;          // Pixel index data (320x200 = 64,000 raw pixels) 
                                   // compressed via LZ4 in dependent stream mode (LZ4_compress_fast_continue)
 };
-
-struct video_binary {
-    struct video_header header;
-    int32_t *index_table;
-    struct frame_data_block *frames;
-};
 ```
-### Verification Tool (verificator.c)
-
-A verification utility is provided to test and debug generated .BIN packages.
-* Analysis Mode: Checks structural integrity, index table mapping, and compression ratios.
-```bash
-./verificator video.bin
-```
-
-* Extraction Mode: Decompresses and extracts a specific frame directly to a PNG file for visual inspection.
-```bash
-./verificator video.bin 150 frame_150.png
-```
+## Compilation Requirements for DOS
+To compile and run the player (main.c) natively or test it under MS-DOS:
+* **Compiler:** DJGPP (GCC port for DOS)
+* **Multimedia Library:** Allegro 4.2 library configured with Sound Blaster support.
+* **Note:** You can find a complete, pre-configured DJGPP environment bundle for DOS with Allegro 4.2 and Sound Blaster fixes at mrdictionary.net.
