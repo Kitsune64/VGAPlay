@@ -75,7 +75,7 @@ struct video_binary {
     struct frame_data_block *frames;
 };
 ```
-## Verification Tool (verificator.c)
+### Verification Tool (verificator.c)
 
 A verification utility is provided to test and debug generated .BIN packages.
 * Analysis Mode: Checks structural integrity, index table mapping, and compression ratios.
