@@ -2,7 +2,8 @@
 
 A high-performance VGA video player (fork of *DOSVideoPlayer* by Netdex) and multi-platform asset packaging suite designed for DOS systems (MS-DOS, FreeDOS, DOSBox Emulator).
 
-[Demonstration Video (Workflow on Linux and DOSBox-X)](https://www.youtube.com/watch?v=j21uid9JJi8)
+## Demonstration
+[How to use VGAPlay Video](https://www.youtube.com/watch?v=FG9wyt7oGnQ)
 
 ## Description
 
