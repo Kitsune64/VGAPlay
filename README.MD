@@ -18,8 +18,8 @@ The player reads a custom binary container (`.BIN`) generated from a sequence of
 
 ### 1. Host Conversion & Packaging Tools
 * **`FramePack.c` (Core Packager):** Takes a directory of PNG frames, computes optimized 256-color palettes using Median-Cut quantization, compresses frame buffers using LZ4 dependent streams, and bundles everything into an optimized `.BIN` file.
-* **`convert_dos.sh` / `convert_dos.bat`:** Helper scripts utilizing **FFmpeg** to convert raw video or audio inputs into the required DOS-compatible PCM format (`11025 Hz, 8-bit unsigned mono`).
-* **`extract_frames.sh`:** A Bash pipeline script that extracts frames from an MP4 video, resizes/pads them to 320x200 pixels, applies Floyd-Steinberg dithering, and outputs indexed PNG frames ready for packaging.
+* **`File2DOSWAV.sh` / `convert_dos.bat`:** Helper scripts utilizing **FFmpeg** to convert raw video or audio inputs into the required DOS-compatible PCM format (`11025 Hz, 8-bit unsigned mono`).
+* **`MP4toPNG.sh`:** A Bash pipeline script that extracts frames from an MP4 video, resizes/pads them to 320x200 pixels, applies Floyd-Steinberg dithering, and outputs indexed PNG frames ready for packaging.
 
 ### 2. Verification & Debugging Utilities
 * **`verificator.c` (Host Verificator):** A multi-function utility compiled alongside `FramePack` to check `.BIN` structural integrity, analyze compression ratios, and extract specific frames back into PNG format for visual QA.
