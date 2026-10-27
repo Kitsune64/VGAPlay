@@ -27,8 +27,6 @@ ffmpeg -i input.mp4 -ar 11025 -ac 1 -c:a pcm_u8 -fflags +bitexact -map_metadata 
 ```
 ## Workflow & Binary Generation
 
-   1. Prepare Frames: Export your source video as a series of PNG images (strictly 320x200 resolution) named in ascending order (e.g., frame_000001.png, frame_000002.png).
-
-   2. Compile the Generator: Compile main.c to generate the packaging utility.
-
-   3. Run the Generator: Execute the program providing your directory, output name, frame count, FPS, and max colors limit:
+1. Prepare Frames: Export your source video as a series of PNG images (strictly 320x200 resolution) named in ascending order (e.g., frame_000001.png, frame_000002.png).
+2. Compile the Generator: Compile main.c to generate the packaging utility.
+3. Run the Generator: Execute the program providing your directory, output name, frame count, FPS, and max colors limit:
