@@ -2,7 +2,7 @@
 
 A high-performance VGA video player (fork of *DOSVideoPlayer* by Netdex) and multi-platform asset packaging suite designed for DOS systems (MS-DOS, FreeDOS, DOSBox Emulator).
 
-[Demonstration Video (Workflow of the new version on Linux and DOSBox-X)](https://www.youtube.com/watch?v=j21uid9JJi8)
+[Demonstration Video (Workflow on Linux and DOSBox-X)](https://www.youtube.com/watch?v=j21uid9JJi8)
 
 ## Description
 
