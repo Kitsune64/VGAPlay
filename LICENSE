@@ -1,5 +1,9 @@
-MIT License
+================================================================================
+                       LICENSE AND THIRD-PARTY NOTICES                          
+================================================================================
 
+MAIN PROJECT LICENSE: MIT LICENSE
+--------------------------------------------------------------------------------
 Copyright (c) 2026 Kitsune64
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,3 +23,75 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+================================================================================
+               PART 1: EMBEDDED SOURCE CODE DEPENDENCIES                        
+================================================================================
+The following components are embedded and compiled from source code within this
+repository. Original copyright headers remain intact inside the source files.
+
+1. PL_MPEG (pl_mpeg.h)
+--------------------------------------------------------------------------------
+* License     : MIT License
+* Copyright   : Dominic Szablewski
+
+2. LZ4 (lz4.c, lz4hc.c, lz4frame.c, lz4.h, lz4hc.h, lz4frame.h)
+--------------------------------------------------------------------------------
+* License     : BSD 2-Clause License ("Simplified BSD License")
+* Copyright   : Yann Collet (2011-present)
+* Requirement : Retain the copyright notice, list of conditions, and the
+                disclaimer in the source headers.
+
+3. xxHash (xxhash.c, xxhash.h)
+--------------------------------------------------------------------------------
+* License     : BSD 2-Clause License ("Simplified BSD License")
+* Copyright   : Yann Collet (2012-2016)
+* Requirement : Retain the copyright notice, list of conditions, and the
+                disclaimer in the source headers.
+
+4. libpng (png.c, pngread.c, pngwrite.c, png.h, etc.)
+--------------------------------------------------------------------------------
+* License     : libpng License (BSD-style permissive license)
+* Copyright   : Cosmin Truta, Glenn Randers-Pehrson, Andreas Dilger,
+                Guy Eric Schalnat, and contributors.
+* Requirement : Preserve original header comments containing copyright notices
+                and terms of use.
+
+5. zlib (adler32.c, compress.c, deflate.c, inflate.c, zlib.h, zconf.h, etc.)
+--------------------------------------------------------------------------------
+* License     : zlib License
+* Copyright   : Jean-loup Gailly and Mark Adler
+* Requirement : Retain copyright notices and origin statements in the source
+                file headers.
+
+
+================================================================================
+               PART 2: PRE-COMPILED SHARED RUNTIMES                             
+================================================================================
+The following binary runtimes are embedded for automated cross-platform 
+distribution and runtime execution setup.
+
+1. FFmpeg (ffmpeg/win32/ and ffmpeg/win64/)
+--------------------------------------------------------------------------------
+* License     : LGPL v3.0 (Shared / Dynamic linking build)
+* Homepage    : https://ffmpeg.org
+* Compliance  : In strict accordance with the LGPL requirements, FFmpeg is
+                integrated via DYNAMIC LINKING ONLY (external .dll files).
+                The user retains the right to swap out these shared libraries.
+                Consequently, the core suite executable code remains unlinked
+                statically and fully protected under its native MIT License.
+                Original license and README documents are preserved within
+                their respective architecture directories.
+
+
+================================================================================
+CONCLUSION AND GENERAL COMPLIANCE NOTE                                          
+================================================================================
+All components embedded or linked by this suite use permissive open-source
+licenses (MIT, BSD 2-Clause, libpng, zlib) or dynamic LGPL linking.
+Integrating these assets into an MIT-licensed repository is fully permitted
+provided that all original copyright header comments inside the source files
+remain intact.
+================================================================================
+
