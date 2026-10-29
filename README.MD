@@ -1,9 +1,13 @@
 # VGAPlay
 
-It's a VGA video player in 13h mode (fork of [*DOSVideoPlayer*](https://github.com/Netdex/DOSVideoPlayer) by Netdex)  designed for DOS systems (MS-DOS, FreeDOS, DOSBox Emulator), and a multi-platform MPG/PNG converter (FramePack Suite) to convert VIDEO to make it playable on VGAPLAY.
+VGAPlay Project is a set of tools forked from [*DOSVideoPlayer*](https://github.com/Netdex/DOSVideoPlayer) by Netdex Project on Github.
+
+• VGAPLAY Player: A Mode 13h (320x200, 8-bit) video player for legacy DOS systems (MS-DOS, FreeDOS, DOSBox).
+
+• Encoder: Includes FramePack Suite, a cross-platform utility used to convert and package external video streams (MPG format) and PNG files into the native format required by VGAPlay.
 
 ## Demonstration
-[How to use VGAPlay Video](https://youtu.be/YW1tvyo3zkU)
+[How to use VGAPlay Video](https://youtu.be/YW1tvyo3zkU) (old version)
 
 ## Description
 
