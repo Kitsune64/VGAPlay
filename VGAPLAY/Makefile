@@ -21,8 +21,8 @@ COMMON_OBJ = $(addprefix $(ODIR)/, $(COMMON_SOURCES:.c=.o))
 MAIN_OBJ = $(COMMON_OBJ) $(ODIR)/main.o
 VERIFY_OBJ = $(COMMON_OBJ) $(ODIR)/verify.o
 
-# Cible par défaut : compile les deux programmes à la fois
-all: $(BDIR)/$(EXEC_FILE) $(BDIR)/$(VERIFY_FILE)
+# Cible par défaut : avec la vraie liste de fichiers de doc
+all: $(BDIR)/$(EXEC_FILE) $(BDIR)/$(VERIFY_FILE) $(BDIR)\CWSDPMI.EXE $(BDIR)\DOC\COPYING.CWS $(BDIR)\DOC\CSDPMI7B.VER $(BDIR)\DOC\CWSDPMI.DOC $(BDIR)\DOC\CWSPARAM.DOC
 
 # Règle générique de compilation des .o
 $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
@@ -36,8 +36,38 @@ $(BDIR)/$(EXEC_FILE): $(MAIN_OBJ)
 $(BDIR)/$(VERIFY_FILE): $(VERIFY_OBJ)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
+# Règle pour copier CWSDPMI.EXE
+$(BDIR)\CWSDPMI.EXE: 3rdparty\BIN\CWSDPMI.EXE
+	copy /Y 3rdparty\BIN\CWSDPMI.EXE $(BDIR)\CWSDPMI.EXE
+
+# Règle corrigée : va chercher le readme.txt dans VOTRE dossier doc/ local
+$(BDIR)\README.TXT: doc\README.TXT
+	copy /Y doc\README.TXT $(BDIR)\README.TXT
+	
+# Règle DOS pour créer le dossier bin\DOC s'il n'existe pas
+$(BDIR)\DOC:
+	if not exist $(BDIR)\DOC mkdir $(BDIR)\DOC
+
+# Règles de copie pour les 4 fichiers de DOC réels
+$(BDIR)\DOC\COPYING.CWS: 3rdparty\DOC\CWSDPMI\COPYING.CWS | $(BDIR)\DOC
+	copy /Y 3rdparty\DOC\CWSDPMI\COPYING.CWS $(BDIR)\DOC\COPYING.CWS
+
+$(BDIR)\DOC\CSDPMI7B.VER: 3rdparty\DOC\CWSDPMI\CSDPMI7B.VER | $(BDIR)\DOC
+	copy /Y 3rdparty\DOC\CWSDPMI\CSDPMI7B.VER $(BDIR)\DOC\CSDPMI7B.VER
+
+$(BDIR)\DOC\CWSDPMI.DOC: 3rdparty\DOC\CWSDPMI\CWSDPMI.DOC | $(BDIR)\DOC
+	copy /Y 3rdparty\DOC\CWSDPMI\CWSDPMI.DOC $(BDIR)\DOC\CWSDPMI.DOC
+
+$(BDIR)\DOC\CWSPARAM.DOC: 3rdparty\DOC\CWSDPMI\CWSPARAM.DOC | $(BDIR)\DOC
+	copy /Y 3rdparty\DOC\CWSDPMI\CWSPARAM.DOC $(BDIR)\DOC\CWSPARAM.DOC
+
 .PHONY: clean all
 
 clean:
-	del $(ODIR)\*.o
-	del $(BDIR)\*.exe
+	-del $(ODIR)\*.o
+	-del $(BDIR)\*.EXE
+	-del $(BDIR)\README.TXT
+	@rem Suppression directe du contenu et du dossier (le tiret ignore les alertes DOS)
+	-del /F /Q bin\DOC\*.*
+	-rmdir /S /Q bin\DOC
+
