@@ -86,7 +86,6 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
 
         // Frame drop mechanism: if decoder lags behind real-time, skip rendering but keep decoding to feed LZ4 stream history
         if (frame < target_frame) {
-            // UPDATED: Passing current "frame" index to fetch target block size from RAM
             decode_video_frame(video_file, frame, palette_data, palette_sizes, video_data);
             frame++;
             continue;
@@ -97,8 +96,7 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
 
         byte *raw_pal = palette_data;
 
-        /* FAST VGA DAC OPTIMIZATION: Palettes are always exactly 256 colors now (768 bytes).
-           We directly dump the shifted RGB triplets straight into Allegro's hardware registers structure */
+        /* FAST VGA DAC OPTIMIZATION */
         for (int c = 0; c < 256; c++) {
             allegro_pal[c].r = raw_pal[c * 3] >> 2;
             allegro_pal[c].g = raw_pal[c * 3 + 1] >> 2;
@@ -107,12 +105,11 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
 
         set_palette(allegro_pal);
 
-		// --- RENDER BUFFER TO SCREEN ---
-		for (int y = 0; y < 200; y++) {
-			unsigned long dest_addr = bmp_write_line(ram_buffer, y);
-			memcpy((void *)dest_addr, video_data + (y * 320), 320);
-		}
-
+        // --- RENDER BUFFER TO SCREEN ---
+        for (int y = 0; y < 200; y++) {
+            unsigned long dest_addr = bmp_write_line(ram_buffer, y);
+            memcpy((void *)dest_addr, video_data + (y * 320), 320);
+        }
 
         // Blit intermediate buffer directly to VGA screen address
         blit(ram_buffer, screen, 0, 0, 0, 0, 320, 200);
@@ -121,7 +118,7 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
         uclock_t frame_target_time = start_time + ((frame + 1) * uclocks_per_frame);
         if (!skip) {
             while (uclock() < frame_target_time) {
-                rest(0); // Yield to system without raw locking the CPU threads
+                rest(0);
             }
         }
 
@@ -142,7 +139,7 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
 /* =========================================================================
    RPG ENGINE MAIN ENTRY POINT
    ========================================================================= */
-int main(void) {
+int main(int argc, char *argv[]) {
     if (allegro_init() != 0) {
         printf("Allegro initialization failed!\n");
         return 1;
@@ -157,9 +154,45 @@ int main(void) {
 
     set_color_depth(8);
 
-    // --- PLAY CINEMATIC INTRO ---
-    if (exists("VIDEO.BIN") && exists("AUDIO.WAV")) {
-        play_lz4_cinematic("VIDEO.BIN", "AUDIO.WAV");
+    // --- PLAY CINEMATIC INTRO BASED ON ARGUMENTS ---
+    char video_filename[128];
+    char audio_filename[128];
+    int play_cinematic = 0;
+
+    if (argc > 1) {
+        // Un argument a été fourni (ex: INTRO ou INTRO.BIN)
+        char base_name[100];
+        strcpy(base_name, argv[1]);
+
+        // Vérifier si l'argument contient déjà une extension (.bin ou autre)
+        char *ext = strrchr(base_name, '.');
+        if (ext != NULL) {
+            // L'utilisateur a fourni le nom complet avec extension (ex: INTRO.BIN)
+            strcpy(video_filename, base_name);
+            // On extrait la racine pour l'audio
+            *ext = '\0';
+            sprintf(audio_filename, "%s.wav", base_name);
+        } else {
+            // L'utilisateur a fourni juste le nom (ex: INTRO)
+            sprintf(video_filename, "%s.bin", base_name);
+            sprintf(audio_filename, "%s.wav", base_name);
+        }
+        play_cinematic = 1;
+    } else {
+        // Aucun argument, comportement par défaut optionnel (ex: VIDEO.BIN / AUDIO.WAV)
+        if (exists("VIDEO.BIN") && exists("AUDIO.WAV")) {
+            strcpy(video_filename, "VIDEO.BIN");
+            strcpy(audio_filename, "AUDIO.WAV");
+            play_cinematic = 1;
+        }
+    }
+
+    if (play_cinematic) {
+        if (exists(video_filename) && exists(audio_filename)) {
+            play_lz4_cinematic(video_filename, audio_filename);
+        } else {
+            printf("Erreur: Fichier video (%s) ou audio (%s) introuvable !\n", video_filename, audio_filename);
+        }
     }
 
     // --- INITIALIZE RPG ENGINE IN MODE X (320x240) ---
@@ -182,3 +215,4 @@ int main(void) {
     return 0;
 }
 END_OF_MAIN()
+
