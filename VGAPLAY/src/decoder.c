@@ -1,3 +1,9 @@
+/*
+ * decoder.c
+ *
+ *  Distributed under the MIT License. See README.TXT for details.
+ */
+
 #include "decoder.h"
 
 LZ4_streamDecode_t lz4StreamDecode_body;

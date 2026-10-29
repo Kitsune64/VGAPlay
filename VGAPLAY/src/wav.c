@@ -3,6 +3,8 @@
  *
  *  Created on: Apr 30, 2017
  *      Author: netdex
+ * 
+ *  Distributed under the MIT License. See README.TXT for details.
  */
 
 #include "wav.h"

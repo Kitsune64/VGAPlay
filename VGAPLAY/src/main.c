@@ -1,3 +1,9 @@
+/*
+ * main.c from VGAPLAY by Kitsune64 on Github. 
+ * URL: https://github.com/Kitsune64/VGAPlay
+ * 
+ * Distributed under the MIT License. See README.TXT for details.
+ */
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
@@ -137,9 +143,18 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
 }
 
 /* =========================================================================
-   RPG ENGINE MAIN ENTRY POINT
+   ENGINE MAIN ENTRY POINT
    ========================================================================= */
 int main(int argc, char *argv[]) {
+
+
+    // Vérification immédiate : on impose la présence d'au moins un argument
+    if (argc < 2) {
+        printf("Usage: VGAPLAY.EXE <filename>\n");
+        printf("Example: VGAPLAY INTRO (will load INTRO.BIN and INTRO.WAV)\n");
+        return 1;
+    }
+
     if (allegro_init() != 0) {
         printf("Allegro initialization failed!\n");
         return 1;
@@ -154,45 +169,33 @@ int main(int argc, char *argv[]) {
 
     set_color_depth(8);
 
-    // --- PLAY CINEMATIC INTRO BASED ON ARGUMENTS ---
+    // --- PREPARE CINEMATIC FILENAMES FROM ARGUMENT ---
     char video_filename[128];
     char audio_filename[128];
-    int play_cinematic = 0;
 
-    if (argc > 1) {
-        // Un argument a été fourni (ex: INTRO ou INTRO.BIN)
-        char base_name[100];
-        strcpy(base_name, argv[1]);
+    char base_name[100];
+    strcpy(base_name, argv[1]);
 
-        // Vérifier si l'argument contient déjà une extension (.bin ou autre)
-        char *ext = strrchr(base_name, '.');
-        if (ext != NULL) {
-            // L'utilisateur a fourni le nom complet avec extension (ex: INTRO.BIN)
-            strcpy(video_filename, base_name);
-            // On extrait la racine pour l'audio
-            *ext = '\0';
-            sprintf(audio_filename, "%s.wav", base_name);
-        } else {
-            // L'utilisateur a fourni juste le nom (ex: INTRO)
-            sprintf(video_filename, "%s.bin", base_name);
-            sprintf(audio_filename, "%s.wav", base_name);
-        }
-        play_cinematic = 1;
+    // Vérifier si l'argument contient déjà une extension (.BIN ou .bin)
+    char *ext = strrchr(base_name, '.');
+    if (ext != NULL) {
+        // L'utilisateur a fourni le nom complet avec extension (ex: INTRO.BIN)
+        strcpy(video_filename, base_name);
+        // On extrait la racine pour générer l'audio en majuscules
+        *ext = '\0';
+        sprintf(audio_filename, "%s.WAV", base_name);
     } else {
-        // Aucun argument, comportement par défaut optionnel (ex: VIDEO.BIN / AUDIO.WAV)
-        if (exists("VIDEO.BIN") && exists("AUDIO.WAV")) {
-            strcpy(video_filename, "VIDEO.BIN");
-            strcpy(audio_filename, "AUDIO.WAV");
-            play_cinematic = 1;
-        }
+        // L'utilisateur a fourni juste la racine (ex: INTRO)
+        sprintf(video_filename, "%s.BIN", base_name);
+        sprintf(audio_filename, "%s.WAV", base_name);
     }
 
-    if (play_cinematic) {
-        if (exists(video_filename) && exists(audio_filename)) {
-            play_lz4_cinematic(video_filename, audio_filename);
-        } else {
-            printf("Erreur: Fichier video (%s) ou audio (%s) introuvable !\n", video_filename, audio_filename);
-        }
+    // --- PLAY CINEMATIC ---
+    if (exists(video_filename) && exists(audio_filename)) {
+        play_lz4_cinematic(video_filename, audio_filename);
+    } else {
+        printf("Erreur: Fichier video (%s) ou audio (%s) introuvable !\n", video_filename, audio_filename);
+        return 1; 
     }
 
     // --- INITIALIZE RPG ENGINE IN MODE X (320x240) ---

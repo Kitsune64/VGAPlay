@@ -1,7 +1,7 @@
 /*
  * error.c
  *
- *  Modifié pour utiliser Allegro et supprimer la dépendance à VGA
+ *  Distributed under the MIT License. See README.TXT for details.
  */
 
 #include "error.h"
