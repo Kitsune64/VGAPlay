@@ -1,0 +1,48 @@
+================================================================================
+                    THIRD-PARTY LICENSES SUMMARY (LIB DIR)                      
+================================================================================
+
+This document summarizes the third-party libraries integrated into the 'lib'     
+directory. All components use permissive open-source licenses that are          
+fully compatible with distribution under the MIT License.                       
+
+--------------------------------------------------------------------------------
+1. LIBPNG                                                                       
+--------------------------------------------------------------------------------
+* License       : libpng License (BSD-style permissive license)                 
+* Copyright     : Cosmin Truta, Glenn Randers-Pehrson, Andreas Dilger,          
+                  Guy Eric Schalnat, and contributors.                          
+* Requirement   : Preserve original header comments containing copyright        
+                  notices and terms of use.                                     
+
+--------------------------------------------------------------------------------
+2. ZLIB                                                                         
+--------------------------------------------------------------------------------
+* License       : zlib License                                                  
+* Copyright     : Jean-loup Gailly and Mark Adler                               
+* Requirement   : Retain copyright notices and origin statements in the source  
+                  file headers.                                                 
+
+--------------------------------------------------------------------------------
+3. XXHASH                                                                       
+--------------------------------------------------------------------------------
+* License       : BSD 2-Clause License ("Simplified BSD License")               
+* Copyright     : Yann Collet (2012-2016)                         
+* Requirement   : Retain the copyright notice, list of conditions, and the      
+                  disclaimer in the source code headers.                        
+
+--------------------------------------------------------------------------------
+4. LZ4                                                                          
+--------------------------------------------------------------------------------
+* License       : BSD 2-Clause License ("Simplified BSD License") 
+* Copyright     : Yann Collet (2011-present)                      
+* Requirement   : Retain the copyright notice, list of conditions, and the      
+                  disclaimer in the source code headers.                        
+
+================================================================================
+GENERAL COMPLIANCE NOTE                                                         
+================================================================================
+Integrating these files into an MIT-licensed project is fully permitted,        
+provided that all original copyright header comments inside the source files    
+remain intact.                                                                  
+================================================================================
