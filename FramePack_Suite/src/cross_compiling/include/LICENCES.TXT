@@ -1,32 +1,27 @@
 ================================================================================
-THIRD-PARTY LICENSES SUMMARY FOR INCLUDE FILES
+                THIRD-PARTY LICENSES SUMMARY FOR INCLUDE FILES                  
 ================================================================================
 
-This project incorporates third-party files under various permissive 
+This project incorporates third-party headers under various permissive 
 open-source licenses. Below is a summary of the licenses associated with 
-each component:
+each component currently present in this directory:
 
-1. PL_MPEG (pl_mpeg.h)
-   - License: MIT License
-   - Summary: Free to use, modify, and distribute with the original 
-     copyright notice.
-
-2. LZ4 (lz4.h, lz4frame.h, lz4hc.h)
+1. LZ4 (lz4.h, lz4frame.h, lz4hc.h)
    - License: BSD 2-Clause License
    - Summary: Permissive license allowing modification and redistribution 
      provided the copyright notice and disclaimer are retained.
 
-3. libpng (png.h)
+2. libpng (png.h, pngconf.h, pnglibconf.h, pngstruct.h, pnginfo.h, pngdebug.h)
    - License: libpng License
    - Summary: BSD-derived permissive license allowing free use, modification, 
      and redistribution.
 
-4. xxHash (xxhash.h)
+3. xxHash (xxhash.h)
    - License: BSD 2-Clause License
    - Summary: Permissive license requiring the preservation of copyright 
      and disclaimer notices.
 
-5. zlib (zlib.h, zconf.h)
+4. zlib (zlib.h, zconf.h)
    - License: zlib License
    - Summary: Permissive license (authored by Jean-loup Gailly and Mark Adler) 
      allowing commercial and non-commercial use, modification, and free 
@@ -35,6 +30,6 @@ each component:
 --------------------------------------------------------------------------------
 CONCLUSION:
 All files included in this folder use permissive open-source licenses 
-(MIT, BSD 2-Clause, libpng, and zlib), making them entirely compatible 
+(BSD 2-Clause, libpng, and zlib), making them entirely compatible 
 with an MIT-licensed project.
 ================================================================================
