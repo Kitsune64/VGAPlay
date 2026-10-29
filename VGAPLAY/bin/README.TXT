@@ -1,5 +1,5 @@
 ========================================================================
-       VGAPLAY & VERIFMOV (for DOS) - USER GUIDE AND LICENSES
+       VGAPLAY & VERIFMOV - USER GUIDE AND LICENSES
 ========================================================================
 
 1. SYSTEM REQUIREMENTS
@@ -14,12 +14,19 @@
 ------------------------------------------------------------------------
 
 --- VGAPLAY.EXE ---
-Synchronized cinematic player for video (VIDEO.BIN) and audio (AUDIO.WAV) 
-streams in standard VGA mode (320x200, 8-bit).
+Synchronized cinematic player for video and audio streams in standard 
+VGA mode (320x200, 8-bit).
 
-- Default usage:
-  VGAPLAY.EXE
-  (Automatically searches for "VIDEO.BIN" and "AUDIO.WAV" in the directory).
+- Usage options:
+  * Default (no arguments):
+    VGAPLAY.EXE
+    (Automatically searches for "VIDEO.BIN" and "AUDIO.WAV" in the directory).
+  
+  * With arguments (custom video):
+    VGAPLAY.EXE <filename>
+    (You can provide the prefix like "INTRO", or the full video file like 
+    "INTRO.BIN". The player will automatically associate the corresponding 
+    ".wav" audio file).
 
 - Controls during playback:
   * [ESC]         : Interrupt and skip the cinematic.
@@ -59,7 +66,7 @@ APPENDIX: FULL LICENSE TEXTS
 ------------------------------------------------------------------------
 MIT LICENSE (For VGAPLAY and VERIFMOV)
 ------------------------------------------------------------------------
-Copyright (c) 2026 Kitsune64 on Github
+Copyright (c) 2026 Kitsune64 on Github.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -82,6 +89,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 URL of the VGAPlay Project page on Github:
 https://github.com/Kitsune64/VGAPlay
+
 ------------------------------------------------------------------------
 BSD 2-CLAUSE LICENSE (For the embedded LZ4 decompression code)
 ------------------------------------------------------------------------
