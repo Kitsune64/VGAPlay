@@ -88,7 +88,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 URL of the VGAPlay Project page on Github:
-https://github.com
+https://github.com/Kitsune64/VGAPlay
 
 ------------------------------------------------------------------------
 BSD 2-CLAUSE LICENSE (For the embedded LZ4 decompression code)
