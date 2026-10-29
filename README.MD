@@ -19,7 +19,7 @@ The player reads a custom binary container (`.BIN`) generated from a sequence of
 
 ---
 
-## Project Structure & Components
+## Project Structure & Components (To Update)
 
 ### 1. Host Conversion & Packaging Tools
 * **`FramePack.c` (Core Packager):** Takes a directory of PNG frames, computes optimized 256-color palettes using Median-Cut quantization, compresses frame buffers using LZ4 dependent streams, and bundles everything into an optimized `.BIN` file.
