@@ -1,112 +1,178 @@
+/*
+  mpg2wav - MP4 Audio Extractor to Retro Sound Blaster WAV Format (11025 Hz, 8-bit, Mono)
+  License: MIT
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
-#define PL_MPEG_IMPLEMENTATION
-#include "pl_mpeg.h"
+/* FFmpeg (libav) headers */
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswresample/swresample.h>
+#include <libavutil/opt.h>
 
-// WAV header structure
+/* Standard WAV header structure (Microsoft RIFF) */
+#pragma pack(push, 1)
 typedef struct {
-    char chunk_id[4];        // "RIFF"
-    uint32_t chunk_size;     // File size - 8
-    char format[4];          // "WAVE"
-    char subchunk1_id[4];    // "fmt "
-    uint32_t subchunk1_size; // 16 for PCM
-    uint16_t audio_format;   // 1 for PCM
-    uint16_t num_channels;   // 1 for Mono
-    uint32_t sample_rate;    // Sample rate: 11025 Hz
-    uint32_t byte_rate;      // sample_rate * num_channels * bits_per_sample / 8
-    uint16_t block_align;    // num_channels * bits_per_sample / 8
-    uint16_t bits_per_sample;// 8 for 8-bit unsigned
-    char subchunk2_id[4];    // "data"
-    uint32_t subchunk2_size; // Raw audio data size
+    char chunk_id[4];         /* "RIFF" */
+    uint32_t chunk_size;      /* File size - 8 bytes */
+    char format[4];           /* "WAVE" */
+    char subchunk1_id[4];     /* "fmt " */
+    uint32_t subchunk1_size;  /* 16 for PCM */
+    uint16_t audio_format;    /* 1 for PCM uncompressed */
+    uint16_t num_channels;    /* 1 for Mono */
+    uint32_t sample_rate;     /* 11025 Hz target */
+    uint32_t byte_rate;       /* sample_rate * channels * bits_per_sample / 8 */
+    uint16_t block_align;     /* channels * bits_per_sample / 8 */
+    uint16_t bits_per_sample; /* 8 for 8-bit unsigned PCM */
+    char subchunk2_id[4];     /* "data" */
+    uint32_t subchunk2_size;  /* Raw audio bytes size */
 } wav_header_t;
+#pragma pack(pop)
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: %s <video.mpg>\n", argv[0]);
+        printf("Usage: mpg2wav <file.mp4>\n");
         return 1;
     }
 
-    plm_t *plm = plm_create_with_filename(argv[1]);
-    if (!plm) {
-        printf("Error opening MPEG file.\n");
+    char *input_filename = argv[1];
+    uint32_t target_sample_rate = 11025;
+
+    /* 1. Open input multimedia file using FFmpeg context */
+    AVFormatContext *format_ctx = NULL;
+    if (avformat_open_input(&format_ctx, input_filename, NULL, NULL) != 0) {
+        printf("Could not open file %s\n", input_filename);
         return 1;
     }
 
-    // Disable video decoding to focus purely on audio extraction speed
-    plm_set_video_enabled(plm, FALSE);
-    plm_set_audio_enabled(plm, TRUE);
-
-    // Récupération de la fréquence source native du MPEG (ex: 44100 ou 22050 Hz)
-    int source_sample_rate = plm_get_samplerate(plm);
-    int target_sample_rate = 11025; // Cible fixe pour Sound Blaster / DOS
-
-    if (source_sample_rate <= 0) {
-        source_sample_rate = 44100; // Valeur de repli par défaut si non détecté
+    if (avformat_find_stream_info(format_ctx, NULL) < 0) {
+        avformat_close_input(&format_ctx);
+        return 1;
     }
 
-    // Calcul du pas de décimation (ex: 44100 / 11025 = 4)
-    int step = source_sample_rate / target_sample_rate;
-    if (step < 1) step = 1;
+    /* Find the primary audio stream index */
+    int audio_stream_idx = -1;
+    for (unsigned int i = 0; i < format_ctx->nb_streams; i++) {
+        if (format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            audio_stream_idx = i;
+            break;
+        }
+    }
 
+    if (audio_stream_idx == -1) {
+        printf("No audio stream found in the input file.\n");
+        avformat_close_input(&format_ctx);
+        return 1;
+    }
+
+    /* Set up decoder context for the audio stream */
+    AVCodecParameters *codec_params = format_ctx->streams[audio_stream_idx]->codecpar;
+    const AVCodec *codec = avcodec_find_decoder(codec_params->codec_id);
+    AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
+    avcodec_parameters_to_context(codec_ctx, codec_params);
+    
+    if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
+        printf("Could not open audio decoder.\n");
+        avcodec_free_context(&codec_ctx);
+        avformat_close_input(&format_ctx);
+        return 1;
+    }
+
+    /* 2. Configure the Software Resampler (libswresample) */
+    SwrContext *swr_ctx = swr_alloc();
+    
+    /* Set input configuration from the source video file automatically */
+    av_opt_set_chlayout(swr_ctx, "in_chlayout", &codec_ctx->ch_layout, 0);
+    av_opt_set_int(swr_ctx, "in_sample_rate", codec_ctx->sample_rate, 0);
+    av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", codec_ctx->sample_fmt, 0);
+
+    /* Set hardcoded target properties required by retro Sound Blaster cards */
+    AVChannelLayout mono_layout;
+    av_channel_layout_default(&mono_layout, 1); /* 1 channel = Mono */
+    av_opt_set_chlayout(swr_ctx, "out_chlayout", &mono_layout, 0);
+    av_opt_set_int(swr_ctx, "out_sample_rate", target_sample_rate, 0);
+    /* AV_SAMPLE_FMT_U8 represents 8-bit unsigned PCM data bytes */
+    av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_U8, 0);
+
+    if (swr_init(swr_ctx) < 0) {
+        printf("Failed to initialize the audio resampler context.\n");
+        swr_free(&swr_ctx);
+        avcodec_free_context(&codec_ctx);
+        avformat_close_input(&format_ctx);
+        return 1;
+    }
+
+    /* 3. Open output target file and write dummy WAV structure header */
     FILE *f_wav = fopen("AUDIO.WAV", "wb");
     if (!f_wav) {
         printf("Error opening AUDIO.WAV for writing.\n");
-        plm_destroy(plm);
+        swr_free(&swr_ctx);
+        avcodec_free_context(&codec_ctx);
+        avformat_close_input(&format_ctx);
         return 1;
     }
 
-    // Write placeholder WAV header (will be updated at the end)
     wav_header_t header = {
         {'R', 'I', 'F', 'F'}, 0, {'W', 'A', 'V', 'E'},
         {'f', 'm', 't', ' '}, 16, 1, 1, target_sample_rate,
-        target_sample_rate * 1, 1, 8,
+        target_sample_rate * 1 * 1, 1, 8,
         {'d', 'a', 't', 'a'}, 0
     };
     fwrite(&header, sizeof(wav_header_t), 1, f_wav);
 
+    /* 4. Resampling process processing loop */
+    AVPacket *packet = av_packet_alloc();
+    AVFrame *frame = av_frame_alloc();
     uint32_t data_bytes_written = 0;
-    plm_samples_t *samples;
-    int sample_counter = 0;
 
-    // Audio decoding and downsampling loop
-    while ((samples = plm_decode_audio(plm)) != NULL) {
-        int num_frames = samples->count;
+    printf("Extracting and resampling audio to 11025 Hz 8-bit Mono...\n");
 
-        for (int i = 0; i < num_frames; i++) {
-            // On conserve uniquement l'échantillon qui correspond au pas cible (11025 Hz)
-            if ((sample_counter % step) == 0) {
-                // Downmix Stereo (2 channels) to Mono by averaging Left and Right
-                float left = samples->interleaved[i * 2];
-                float right = samples->interleaved[i * 2 + 1];
-                float mono_sample = (left + right) * 0.5f;
+    while (av_read_frame(format_ctx, packet) >= 0) {
+        if (packet->stream_index == audio_stream_idx) {
+            if (avcodec_send_packet(codec_ctx, packet) >= 0) {
+                while (avcodec_receive_frame(codec_ctx, frame) >= 0) {
+                    
+                    /* Calculate upper bound allocation room for converted samples buffer */
+                    int max_out_samples = av_rescale_rnd(swr_get_delay(swr_ctx, codec_ctx->sample_rate) + frame->nb_samples, target_sample_rate, codec_ctx->sample_rate, AV_ROUND_UP);
+                    
+                    uint8_t *output_buffer = NULL;
+                    av_samples_alloc(&output_buffer, NULL, 1, max_out_samples, AV_SAMPLE_FMT_U8, 0);
 
-                // Clamp bounds between -1.0 and 1.0
-                if (mono_sample < -1.0f) mono_sample = -1.0f;
-                if (mono_sample >  1.0f) mono_sample =  1.0f;
+                    /* High-fidelity resample, downmix and hardware level quantization */
+                    int out_samples = swr_convert(swr_ctx, &output_buffer, max_out_samples, (const uint8_t **)frame->data, frame->nb_samples);
+                    
+                    if (out_samples > 0) {
+                        /* 1 sample = 1 byte since format layout is Mono 8-bit unsigned PCM */
+                        fwrite(output_buffer, 1, out_samples, f_wav);
+                        data_bytes_written += out_samples;
+                    }
 
-                // Convert Float [-1.0, 1.0] to 8-bit Unsigned [0, 255]
-                uint8_t sample_8bit = (uint8_t)((mono_sample + 1.0f) * 127.5f);
-
-                fwrite(&sample_8bit, 1, 1, f_wav);
-            data_bytes_written++;
+                    av_freep(&output_buffer);
+                }
             }
-            sample_counter++;
         }
+        av_packet_unref(packet);
     }
 
-    // Update chunk sizes in the WAV header
+    /* 5. Finalize file boundaries and correct sizing data metadata fields */
     header.subchunk2_size = data_bytes_written;
     header.chunk_size = sizeof(wav_header_t) - 8 + data_bytes_written;
     
     fseek(f_wav, 0, SEEK_SET);
     fwrite(&header, sizeof(wav_header_t), 1, f_wav);
-
     fclose(f_wav);
-    plm_destroy(plm);
 
-    printf("Audio extraction completed successfully: AUDIO.WAV (11025 Hz, %u bytes)\n", data_bytes_written);
+    /* Context releases and allocation cleanup cycles */
+    av_frame_free(&frame);
+    av_packet_free(&packet);
+    swr_free(&swr_ctx);
+    avcodec_free_context(&codec_ctx);
+    avformat_close_input(&format_ctx);
+
+    printf("Audio extraction completed successfully: AUDIO.WAV (11025 Hz, Mono, 8-bit, %u bytes written)\n", data_bytes_written);
     return 0;
 }
-
