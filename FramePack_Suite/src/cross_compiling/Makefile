@@ -91,14 +91,19 @@ windows32: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WIN
 	@echo "Compiling Windows 32-bit versions into $(WINDOWS32_DIR)..."
 	$(CROSS_CC_32) $(CFLAGS) FramePack.c $(SRCS_LIBS) -o $(EXE_WIN32) -lm
 	$(CROSS_CC_32) $(CFLAGS) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WIN32) -lm
-	$(CROSS_CC_32) $(CFLAGS) -I$(WIN32_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavformat -lavcodec -lswscale -lavutil -lm
+	$(CROSS_CC_32) $(CFLAGS) -I$(WIN32_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavformat -lavcodec -lswscale -lavutil -lm
 	$(CROSS_CC_32) $(CFLAGS) -I$(WIN32_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
 	@if [ -f "doc/ReadMe.txt" ]; then \
 		cp "doc/ReadMe.txt" "$(WINDOWS32_DIR)/"; \
 		echo "ReadMe.txt copied to $(WINDOWS32_DIR) !"; \
 	fi
-	@echo "Copying Win32 FFmpeg shared runtime DLLs..."
-	@cp $(WIN32_FFMPEG_DIR)/bin/*.dll $(WINDOWS32_DIR)/
+	@echo "Checking Win32 FFmpeg runtime DLLs..."
+	@if [ -d "$(WIN32_FFMPEG_DIR)/bin" ]; then \
+		cp $(WIN32_FFMPEG_DIR)/bin/*.dll $(WINDOWS32_DIR)/; \
+		echo "Win32 FFmpeg shared runtime DLLs copied successfully."; \
+	else \
+		echo "Note: Win32 FFmpeg runtime DLLs folder not found, skipping copy."; \
+	fi
 	@echo "Windows 32-bit standalone suite package built successfully."
 
 # -------------------------------------------------------------------------
@@ -108,14 +113,19 @@ windows64: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WIN
 	@echo "Compiling Windows 64-bit versions into $(WINDOWS64_DIR)..."
 	$(CROSS_CC_64) $(CFLAGS) FramePack.c $(SRCS_LIBS) -o $(EXE_WIN64) -lm
 	$(CROSS_CC_64) $(CFLAGS) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WIN64) -lm
-	$(CROSS_CC_64) $(CFLAGS) -I$(WIN64_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_WIN64) -L$(WIN64_FFMPEG_DIR)/lib -lavformat -lavcodec -lswscale -lavutil -lm
+	$(CROSS_CC_64) $(CFLAGS) -I$(WIN64_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN64) -L$(WIN64_FFMPEG_DIR)/lib -lavformat -lavcodec -lswscale -lavutil -lm
 	$(CROSS_CC_64) $(CFLAGS) -I$(WIN64_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WIN64) -L$(WIN64_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
 	@if [ -f "doc/ReadMe.txt" ]; then \
 		cp "doc/ReadMe.txt" "$(WINDOWS64_DIR)/"; \
 		echo "ReadMe.txt copied to $(WINDOWS64_DIR) !"; \
 	fi
-	@echo "Copying Win64 FFmpeg shared runtime DLLs..."
-	@cp $(WIN64_FFMPEG_DIR)/bin/*.dll $(WINDOWS64_DIR)/
+	@echo "Checking Win64 FFmpeg runtime DLLs..."
+	@if [ -d "$(WIN64_FFMPEG_DIR)/bin" ]; then \
+		cp $(WIN64_FFMPEG_DIR)/bin/*.dll $(WINDOWS64_DIR)/; \
+		echo "Win64 FFmpeg shared runtime DLLs copied successfully."; \
+	else \
+		echo "Note: Win64 FFmpeg runtime DLLs folder not found, skipping copy."; \
+	fi
 	@echo "Windows 64-bit standalone suite package built successfully."
 
 # -------------------------------------------------------------------------
