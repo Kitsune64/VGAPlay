@@ -1,9 +1,12 @@
 /*
  * fileio.h
  *
- *  Created on: Apr 30, 2017
+ *  Created on: 2017
  *      Author: netdex
+ * 
+ *  Distributed under the MIT License. See README.TXT for details.
  */
+
 
 #ifndef INCLUDE_FILEIO_H_
 #define INCLUDE_FILEIO_H_

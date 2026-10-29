@@ -1,3 +1,4 @@
+/* Distributed under the MIT License. See README.TXT for details. */
 #ifndef DECODER_H_
 #define DECODER_H_
 

@@ -1,9 +1,12 @@
 /*
  * error.h
  *
- *  Created on: Apr 17, 2017
+ *  Created on: 2017
  *      Author: netdex
+ * 
+ *  Distributed under the MIT License. See README.TXT for details.
  */
+
 
 #ifndef INCLUDE_ERROR_H_
 #define INCLUDE_ERROR_H_

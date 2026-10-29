@@ -1,11 +1,12 @@
 /*
  * wav.h
  *
- *  Created on: Apr 30, 2017
+ *  Created on: 2017
  *      Author: netdex
- *
- *      For reading Microsoft 8-bit unsigned mono WAV
+ * 
+ *  Distributed under the MIT License. See README.TXT for details.
  */
+
 
 #ifndef INCLUDE_WAV_H_
 #define INCLUDE_WAV_H_
