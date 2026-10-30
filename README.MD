@@ -107,14 +107,6 @@ The suite includes an optimized multi-target `Makefile` supporting native Linux 
 
 *Note: Windows cross-compilation linking utilizes embedded stubs (`.dll.a` files) located in local `./ffmpeg/` paths. Runtime shared DLL files are excluded from the source tree to prevent bloating and comply with GitHub's file limits. If a local `bin/` directory containing the official runtime DLLs is detected, the Makefile will automatically package a standalone, deployable bundle.*
 
----
-
-## ⚖️ Licensing & Distribution Information
-
-## ⚖️ Licensing & Distribution Information
-
-The VGAPlay project aggregates components under highly permissive, compatible open-source legal frameworks:
-
 ## ⚖️ Licensing & Distribution Information
 
 The VGAPlay project aggregates components under highly permissive, compatible open-source legal frameworks:
