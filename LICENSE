@@ -38,7 +38,7 @@ SOFTWARE.
 
 
 ===============================================================================
-2. EMBEDDED COMPONENTS LICENSES (Located in the 'lib/include' directory)
+2. EMBEDDED COMPONENTS LICENSES (Located in the 'lib'or 'include' directory)
 ===============================================================================
 
 --- A. LZ4 Compression Layout & xxHash Checksum Engine (BSD 2-Clause License) ---
