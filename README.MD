@@ -1,146 +1,52 @@
 # VGAPlay
 
-The VGAPlay Project is a set of synchronized video and audio playback tools for legacy DOS environments, developed as a fork of the original [*DOSVideoPlayer* by Netdex](https://github.com/Netdex/DOSVideoPlayer) (2017).
+The VGAPlay Project is a high-performance, synchronized real-time video and audio playback ecosystem engineered for legacy DOS architectures. Developed as a modern architectural fork of the original *DOSVideoPlayer* by Netdex (2017), this project bridges modern multi-format video standards with authentic x86 retro hardware.
 
-* **Player:** `VGAPLAY.EXE` – A real-time multimedia player running in standard VGA Mode 13h (320x200, 8-bit indexed color) for legacy DOS systems (MS-DOS 5.0+, FreeDOS, and DOSBox).
-* **Encoder & Toolkit:** Includes the **FramePack Suite**, a comprehensive cross-platform command-line toolset distributed under the MIT License, used to process, extract, package, and validate custom video streams and audio tracks.
+The ecosystem provides two primary executable segments:
+* **Target Player (`VGAPLAY.EXE`):** A native real-time multimedia player running in standard VGA Mode 13h (320x200 resolution, 8-bit indexed 256-color map) built for legacy PC environments (MS-DOS, FreeDOS, and DOSBox).
+* **Host Toolkit (FramePack Suite):** A comprehensive, standalone cross-platform command-line toolset used to ingest modern files, handle color dither quantization, remap audio clocks, and compile custom binary movie streams.
+
+---
 
 ## 📺 Demonstration
-[How to use VGAPlay Video](https://youtu.be/YW1tvyo3zkU) *(Old version overview)*
+[How to use VGAPlay Video](https://youtu.be) *(Old version overview)*
 
 ---
 
-## 📝 Description
+## 📝 Software Component Descriptions
 
-VGAPlay allows you to stream smooth, synchronized cinematic content natively on retro DOS hardware or modern emulators. The software ecosystem is split into two primary components:
+### 1. The DOS Target Executables
+* **`VGAPLAY.EXE` (`main.c`):** The main multimedia deployment player. Built with DJGPP and the Allegro 4.2 framework, it opens a custom standalone movie binary stream, locks execution frequencies directly to hardware timers, streams PCM data packets to Sound Blaster clocks, and allows seamless, automated transitions into Mode X game routines immediately upon cinematic completion.
+* **`VERIFMOV.EXE` (`verify.c`):** A lightweight target diagnostic and verification command-line utility built for native DOS validation. It opens movie packages locally, runs raw data decoding integrity checks block-by-block, and outputs detailed structural health logs directly into a local `VERIFY.LOG` file.
 
-1. **The Host Tools (Linux & Windows):** The **FramePack Suite** features advanced image-processing pipelines, cross-platform automation scripts, an optimized multi-target `Makefile`, a frame packager, an audio downsampler, and validation tools.
-2. **The DOS Target Executables:** The core player (`main.c`) and diagnostic utilities compiled with DJGPP and the Allegro 4.2 library. It initializes Sound Blaster hardware clocks to deliver perfectly synchronized video frames and PCM audio streams.
-
-### Performance & Compression Architecture
-To bypass the strict memory and processing constraints of 16-bit/32-bit real-time DOS execution, VGAPlay utilizes a custom binary stream container (`.BIN`):
-* **Quantization:** Video frames are processed via a Median-Cut color quantization algorithm and mapped to an optimized 8-bit DOS palette.
-* **Dithering:** High-quality Floyd-Steinberg dithering is applied during extraction to preserve visual fidelity at 256 colors.
-* **Compression:** Indexed frame buffers are compressed using **LZ4 dependent stream compression** (`LZ4_compress_fast_continue`), maximizing decompression speed directly within DOS CPU limitations.
-
----
-
-## 🛠️ Project Structure & Component Descriptions
-
-The toolkit contains 4 core host command-line utilities alongside target DOS components:
-
-### 1. Host Conversion & Packaging Tools (FramePack Suite)
-* **`FramePack` (`FramePack.c`):** Scans a directory of ordered PNG frames, performs color quantization, generates optimized 256-color palettes, compresses pixel streams via LZ4, and packs them into the high-performance binary video container (`.BIN`).
-* **`mpg2wav` (`mpg2wav.c`):** Automatically extracts the audio track from a standard MPEG-PS (`.mpg`) file, downsamples it to a target sample rate (11025 Hz), converts stereo channels into mono, and exports a standard uncompressed PCM `AUDIO.WAV` file optimized for retro Sound Blaster hardware.
-* **`PNGExtract` (`PNGExtract.c`):** Decodes source video files, extracts individual frames into a target directory with variable framerate support, handles top-cropping, applies aspect ratio padding to reach the exact 320x200 target resolution, and runs Floyd-Steinberg dithering.
-
-### 2. Verification & Debugging Utilities
-* **`verificator` (`verificator.c` - Host Utility):** Validates the structural integrity of `.BIN` files generated by FramePack on the host system. It parses global headers, verifies the continuous index table, tests LZ4 decompression stability, calculates compression efficiency ratios, and allows selective single-frame export to PNG for visual QA.
-* **`VERIFMOV.EXE` (`verify.c` - DOS Utility):** A command-line target diagnostic tool built for native DOS environments to perform stream decoding checks block-by-block and output structural reports into `VERIFY.LOG`.
-
-### 3. Target DOS Player
-* **`VGAPLAY.EXE` (`main.c`):** The primary DOS executable. It manages the Allegro 4.2 audio-subsystem, reads the `VIDEO.BIN` file stream in real-time, binds playback to hardware timing loops, and offers seamless transitions into Mode X game routines upon video completion.
+### 2. The Host Conversion & Packaging Utilities (FramePack Suite)
+* **`PNGExtract` (`PNGExtract.c`):** Ingests modern video container structures (such as MP4, MKV, AVI) natively via the FFmpeg API. It extracts raw image frames at a chosen frame rate, crops top-boundary camera artifacts (4-pixel crop), resizes the viewport onto a 320x200 canvas with optional aspect padding, and applies Floyd-Steinberg error diffusion dithering to output an optimized 8-bit indexed PNG sequence.
+* **`mpg2wav` (`mpg2wav.c`):** Extracts and demuxes the primary audio track from any multimedia file using FFmpeg's `libswresample` engine. It mixes down multi-channel streams into Mono, applies anti-aliasing filters to downsample frequencies to a strict 11025 Hz rate, and quantizes depth to 8-bit Unsigned PCM, producing an épuré WAV structure with zero bloated metadata tags, preventing driver crashes on retro Sound Blaster 1.0/2.0/Pro/16 DAC hardware.
+* **`FramePack` (`FramePack.c`):** The main production pipeline encoder. It scans an ordered directory of 8-bit indexed PNG frames, applies a Median-Cut quantization algorithm to build a fixed 768-byte palette structure per frame, compresses pixel indices using dependent streaming LZ4 compression (`LZ4_compress_fast_continue`), and packs the outputs into a single, high-efficiency movie binary package (`.BIN`).
+* **`Verificator` (`verificator.c`):** A host-side debugging tool used to validate `.BIN` packages. It parses global headers, verifies continuous index tables, tests LZ4 stream decompression stabilities, computes exact compression efficiency statistics, and allows selective single-frame export back to standard PNG files for visual quality assurance audits.
 
 ---
 
-## 🔊 Multimedia Requirements
+## 🚀 Production Pipeline Workflow
 
-To avoid buffering lag, cracks, or audio stuttering under MS-DOS execution, files must strictly adhere to the following baseline parameters:
-
-### Audio Track Specifications
-* **Format:** Uncompressed PCM 8-bit unsigned mono (`pcm_u8`).
-* **Sample Rate:** 11025 Hz *(highly recommended for Sound Blaster compatibility)*.
-
-You can automate this processing using the provided cross-platform shell scripts or directly evoke **FFmpeg** via your terminal:
-```bash
-ffmpeg -i input.mp4 -ar 11025 -ac 1 -c:a pcm_u8 -fflags +bitexact -map_metadata -1 audio_dos.wav
-```
+To convert a modern video asset for deployment on retro DOS hardware, follow this sequence:
+1. **Extract Frames:** Run `PNGExtract` on an MP4 to create dithered PNG trames.
+2. **Extract Audio:** Run `mpg2wav` on the video to generate the 8-bit WAV file.
+3. **Compile Stream:** Run `FramePack` on the PNG folder to build the `.BIN` file.
+4. **Visual QA:** Use `Verificator` to validate structural block health.
+5. **Deployment:** Move `.BIN`, `.WAV`, and `CWSDPMI.EXE` to your DOS drive.
 
 ---
 
-## 💻 Building the Suite (Host Side)
+## 💾 Running the Player under MS-DOS / DOSBox
 
-The project includes an optimized multi-target `Makefile` allowing you to cross-compile the entire host suite for Linux (native) and Windows (32-bit and 64-bit architectures using the MinGW-w64 toolchain).
-
-### Prerequisites
-Ensure your host machine has the following tools installed:
-* GNU Make
-* GCC Compiler (for native Linux compilation)
-* MinGW-w64 toolchain (`i686-w64-mingw32-gcc` and `x86_64-w64-mingw32-gcc`)
-* `zlib` development headers
-
-### Compilation Commands
-
-* Build all executables across all platforms (Linux, Win32, Win64):
-  ```bash
-  make all
-  ```
-* Build Linux native binaries only (Outputs to `bin/Linux/` along with `convert.sh` automation):
-  ```bash
-  make linux
-  ```
-* Cross-compile Windows 32-bit executables (`.exe` outputs to `bin/Win32/`):
-  ```bash
-  make windows32
-  ```
-* Cross-compile Windows 64-bit executables (`.exe` outputs to `bin/Win64/`):
-  ```bash
-  make windows64
-  ```
-* Clean all workspaces and purge compiled binaries from `bin/`:
-  ```bash
-  make clean
-  ```
-
----
-
-## 🚀 Workflow Guide: From Modern Video to DOS Binary
-
-### Step 1: Automated Video Processing (MP4 to PNG Sequence)
-Place your modern source file named `video.mp4` into your script directory and execute the automated packaging scripts (`MP4toPNG.sh` for Linux or `MP4toPNG.bat` for Windows). The script will clear old files, scale/pad the frames to 320x200, apply 15 FPS indexing, dither, and output an ordered PNG sequence (`G_000000.PNG`, `G_000001.PNG`, etc.).
-
-Alternatively, you can manually trigger **PNGExtract** or **FramePack Suite** components:
-```bash
-# Syntax: PNGExtract <file.mpg> [fps] [max_colors] [padding_mode (0/1)]
-./bin/Linux/PNGExtract video.mpg 15 256 1
-```
-
-### Step 2: Extract DOS Audio Track
-Extract and downsample your audio file using the provided `File2DOSWAV` scripts or the `mpg2wav` utility:
-```bash
-./bin/Linux/mpg2wav video.mpg
-```
-
-### Step 3: Package the Custom Movie Binary (.BIN)
-Pack your indexed PNG directory into a high-performance stream container using **FramePack**:
-```bash
-# Syntax: FramePack <DIRECTORY> <PREFIX> <EXTENSION> <FRAME_COUNT> <FPS> <MAX_COLORS>
-./bin/Linux/FramePack ./PNG video PNG 2853 15 256
-```
-
-### Step 4: Validate and Inspect Integrity
-Analyze structural health or extract frames back to images for visual verification using the **verificator** tool:
-```bash
-# Run structural analysis and compression checks
-./bin/Linux/verificator video.BIN
-
-# Extract an isolated frame (e.g., frame 150) for QA purposes
-./bin/Linux/verificator video.BIN 150 frame_150.png
-```
-
----
-
-## 💾 Running the Player on DOS / DOSBox
-
-### System Requirements
+### Hardware Baseline Requirements
 * **CPU:** Intel 80386 processor or higher.
-* **OS:** MS-DOS 5.0+, FreeDOS, or a compatible environment.
-* **DPMI:** A DPMI server is strictly required. You must copy **`CWSDPMI.EXE`** into the execution folder alongside the player.
+* **OS:** MS-DOS 5.0+, FreeDOS, or an emulation environment (DOSBox).
+* **DPMI:** A 32-bit DPMI server is strictly mandatory. You must copy the standard extender binary `CWSDPMI.EXE` into the execution directory.
 
 ### Runtime Instructions
-Place your compiled `VGAPLAY.EXE`, `CWSDPMI.EXE`, your generated `.BIN` movie file, and the matching `.WAV` audio file into the same DOS directory.
-
-Run the player via command-line arguments:
+Launch the player by passing your movie filename prefix as a command-line argument (the player automatically links and streams the matching audio track):
 ```dos
 VGAPLAY.EXE INTRO
 # OR
@@ -148,26 +54,26 @@ VGAPLAY.EXE INTRO.BIN
 ```
 *Note: The player requires an argument and will automatically resolve, link, and stream the associated `.WAV` audio file matching your prefix name.*
 
-### In-Game Controls
-* `[ESC]` – Immediately interrupts playback and skips the cinematic sequence.
-* `[LEFT SHIFT]` / `[RIGHT SHIFT]` / `[L-CONTROL]` – Enables real-time frame-skipping / turbo mode.
+### Interactive Runtime In-Game Controls
+* `[ESC]` – Instantly terminates playback and skips the cinematic.
+* `[LEFT SHIFT]` / `[RIGHT SHIFT]` / `[L-CONTROL]` – Forces real-time hardware frame-skipping (Turbo Mode).
 
 ---
 
-## 📑 Movie File Format (.BIN) Specification
+## 📑 Custom Movie File Format (.BIN) Specification
 
-For developers interested in expanding the engine, the custom binary container layouts are aligned as follows:
+For engine extensions or custom player developments, layouts are mapped as follows:
 
 ```c
 struct video_header {
     unsigned short frame_count;   // Total number of frames in the video (2 bytes)
-    unsigned char  fps;           // Frames per second / Frame rate (1 byte)
+    unsigned char  fps;           // Playback frame rate (1 byte)
     unsigned char  padding;       // Padding byte for 32-bit alignment (1 byte)
 };
 
 // The index table is located immediately after the global header.
-// It contains 'frame_count' signed 4-byte integers (int32_t) representing 
-// the compressed size (in bytes) of each frame's LZ4 data block.
+// Contains 'frame_count' signed 4-byte integers (int32_t) indicating 
+// the exact compressed byte-size of each subsequent LZ4 video data block payload.
 typedef int32_t index_table_entry; // Total Size = frame_count * 4 bytes
 
 struct palette_entry {
@@ -178,47 +84,36 @@ struct palette_entry {
 
 struct frame_data_block {
     // DOS Fixed Palette Optimization: Systematically flushes a uniform 768-byte packet 
-    // (256 colors * 3 bytes). Unused colors are padded with zeros (0,0,0).
-    struct palette_entry palette; 
+    // (256 colors * 3 bytes RGB). Unused color entries are padded with zeros (0,0,0).
+    struct palette_entry palette[256]; 
     
     int size;                     // Size stored in the index table (LZ4 compressed size)
     unsigned char *data;          // Pixel index data (320x200 = 64,000 raw pixels) 
-                                  // compressed via LZ4 in dependent stream mode (LZ4_compress_fast_continue)
+                                  // compressed via LZ4 in dependent stream mode
 };
 ```
 
 ---
 
-## 🛠️ Target DOS Compilation Requirements
+## 🛠️ Host Suite Compilation
 
-To build the player source code (`main.c`) natively or modify the core executable logic for DOS:
-* **Compiler:** DJGPP (GCC port targeting DPMI DOS).
-* **Multimedia Framework:** Allegro 4.2 library explicitly configured with Sound Blaster audio profiles.
-* **Environment Tip:** A pre-configured, standard DJGPP environment bundle featuring Allegro 4.2 libraries and Sound Blaster runtime modifications can be obtained via [mrdictionary.net/allegro/](https://mrdictionary.net/allegro/).
+The suite includes an optimized multi-target `Makefile` supporting native Linux builds and automated MinGW-w64 cross-compilation:
+
+* `make all` (or `make`) – Builds Linux and Windows (32-bit & 64-bit) target suites.
+* `make linux` – Compiles native Linux host utilities into `bin/Linux/`.
+* `make windows32` – Cross-compiles 32-bit Windows executables into `bin/Win32/`.
+* `make windows64` – Cross-compiles 64-bit Windows executables into `bin/Win64/`.
+* `make clean` – Wipes the `bin/` build directory and flushes intermediate workspace artifacts.
+
+*Note: Windows cross-compilation linking utilizes embedded stubs (`.dll.a` files) located in local `./ffmpeg/` paths. Runtime shared DLL files are excluded from the source tree to prevent bloating and comply with GitHub's file limits. If a local `bin/` directory containing the official runtime DLLs is detected, the Makefile will automatically package a standalone, deployable bundle.*
 
 ---
 
 ## ⚖️ Licensing & Distribution Information
 
-This project bundles multiple components governed under distinct, fully compatible permissive open-source legal frameworks:
+The VGAPlay project aggregates components under highly permissive, compatible open-source legal frameworks:
 
-### A. Main Software Assets (`VGAPLAY.EXE` & `VERIFMOV.EXE`)
-Distributed under the terms of the **MIT License**.
-* **Copyright (c) 2026 Kitsune64 on GitHub**.
-* Derived from the original architectural fork by netdex (2017).
-
-### B. Embedded Third-Party Compression Code (`LZ4`)
-Integrated directly into the decompression streams, governed by the **BSD 2-Clause License**.
-* **Copyright (C) 2011-present Yann Collet**.
-
-### C. External DOS Extender Component (`CWSDPMI.EXE`)
-Exclusive property of its author, packed alongside binaries, governed under the **GNU General Public License version 2 (GNU GPL v2)** with binary distribution clearings.
-* **Copyright (C) 1995-2010 Charles W. Sandmann**.
-* Source materials can be audited via the FreeDOS repository mirror.
-
-### D. Framework Directory Dependencies (`lib` & `include`)
-All accompanying framework inclusions utilize highly permissive licenses completely compatible with an MIT distribution pipeline, provided original header comments containing source copyrights remain intact:
-* **PL_MPEG (`pl_mpeg.h`):** MIT License (Dominic Szablewski / PhobosLab).
-* **libpng (`png.h` / `libpng`):** libpng License / BSD-style (Cosmin Truta, Glenn Randers-Pehrson, Andreas Dilger, Guy Eric Schalnat, and contributors).
-* **zlib (`zlib.h` / `zconf.h`):** zlib License (Jean-loup Gailly and Mark Adler).
-* **xxHash (`xxhash.h`):** BSD 2-Clause License (Yann Collet).
+* **Core Software Suite (`VGAPLAY.EXE`, `VERIFMOV.EXE`, FramePack Suite):** Distributed under the terms of the **MIT License**. Copyright (c) 2026 Kitsune64 on GitHub.
+* **Embedded Compression Frameworks (`LZ4` & `xxHash`):** Integrated directly into source streams. Governed under the terms of the **BSD 2-Clause License**. Copyright (C) Yann Collet.
+* **External Codec Backends (`libpng` & `zlib`):** Compiled statically from source files inside the repository. Governed under the terms of the **libpng License** and the **zlib License** respectively. Copyright (c) Cosmin Truta, Jean-loup Gailly, Mark Adler, and contributors.
+* **Auxiliary DOS Runtime Extender (`CWSDPMI.EXE`):** Exclusive property of its author, distributed alongside compiled binaries under the **GNU General Public License version 2 (GNU GPL v2)** via official binary distribution clearings. Copyright (C) 1995-2010 Charles W. Sandmann.
