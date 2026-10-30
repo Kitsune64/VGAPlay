@@ -31,16 +31,12 @@
 
 /* Mode 1: Fixed height to 160, proportional width, centered on a 320x200 canvas */
 void resize_and_pad(uint8_t *src, int src_w, int src_h, uint8_t *dst, int dst_w, int dst_h) {
-    /* Fill the canvas with black (background color) */
     memset(dst, 0, dst_w * dst_h * 3);
-    
-    /* Calculate scale based on the target height (160px) to keep aspect ratio */
     float scale = (float)VIDEO_TARGET_HEIGHT / (float)src_h;
     int new_h = VIDEO_TARGET_HEIGHT;
     int new_w = (int)((float)src_w * scale + 0.5f);
     if (new_w > dst_w) new_w = dst_w;
 
-    /* Calculate centering offsets */
     int offset_x = (dst_w - new_w) / 2;
     int offset_y = (dst_h - new_h) / 2;
 
@@ -177,32 +173,25 @@ int write_png_indexed(const char *path, int width, int height, uint8_t *indexed_
     return 1;
 }
 
-/* Main orchestration via FFmpeg API */
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        printf("Usage: PNGExtract <file.mp4> [fps] [max_colors] [padding_mode (0/1)]\n");
-        printf("Example: PNGExtract video.mp4 15 256 1\n");
+    if (argc < 6) {
+        printf("Usage: PNGExtract <file.mp4> <output_dir> <fps> <max_colors> <padding_mode (0/1)>\n");
         return 1;
     }
 
+    /* --- Required legacy registration for Windows XP (FFmpeg < 4.0) --- */
+	#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 9, 100)
+		av_register_all();
+	#endif
+
     char *input_filename = argv[1];
-    double target_fps = (argc >= 3) ? atof(argv[2]) : 15.0;
-    int max_colors = (argc >= 4) ? atoi(argv[3]) : 256;
-    int padding_mode = (argc >= 5) ? atoi(argv[4]) : 1;
+    char *output_dir = argv[2];
+    double target_fps = atof(argv[3]);
+    int max_colors = atoi(argv[4]);
+    int padding_mode = atoi(argv[5]);
 
-        /* --- Force clean old PNG directory content --- */
-		#if defined(_WIN32) || defined(_WIN64)
-			/* Windows command to silently delete the directory and all its contents */
-			system("if exist PNG rmdir /s /q PNG");
-		#else
-			/* Linux / macOS command to forcefully delete the directory */
-			system("rm -rf PNG");
-		#endif
+    MKDIR(output_dir);
 
-			/* Create a fresh, empty PNG directory */
-			MKDIR("PNG");
-
-    /* 1. Open the video file using FFmpeg */
     AVFormatContext *format_ctx = NULL;
     if (avformat_open_input(&format_ctx, input_filename, NULL, NULL) != 0) {
         printf("Could not open file %s\n", input_filename);
@@ -211,7 +200,6 @@ int main(int argc, char *argv[]) {
 
     if (avformat_find_stream_info(format_ctx, NULL) < 0) return 1;
 
-    /* Find the video stream */
     int video_stream_idx = -1;
     for (unsigned int i = 0; i < format_ctx->nb_streams; i++) {
         if (format_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -221,14 +209,12 @@ int main(int argc, char *argv[]) {
     }
     if (video_stream_idx == -1) return 1;
 
-    /* Set up the decoder context */
     AVCodecParameters *codec_params = format_ctx->streams[video_stream_idx]->codecpar;
     const AVCodec *codec = avcodec_find_decoder(codec_params->codec_id);
     AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
     avcodec_parameters_to_context(codec_ctx, codec_params);
     if (avcodec_open2(codec_ctx, codec, NULL) < 0) return 1;
 
-    /* 2. Prepare structures for image processing and buffer allocations */
     AVFrame *frame = av_frame_alloc();
     AVFrame *frame_rgb = av_frame_alloc();
     
@@ -239,18 +225,17 @@ int main(int argc, char *argv[]) {
     uint8_t *raw_pixels = (uint8_t *)av_malloc(num_bytes * sizeof(uint8_t));
     av_image_fill_arrays(frame_rgb->data, frame_rgb->linesize, raw_pixels, AV_PIX_FMT_RGB24, w, h, 1);
 
-    /* Initialize the software scaling engine to convert native format to RGB24 */
     struct SwsContext *sws_ctx = sws_getContext(w, h, codec_ctx->pix_fmt, w, h, AV_PIX_FMT_RGB24, SWS_LANCZOS, NULL, NULL, NULL);
 
     uint8_t *canvas_pixels = (uint8_t *)malloc(TARGET_WIDTH * TARGET_HEIGHT * 3);
     uint8_t *indexed_pixels = (uint8_t *)malloc(TARGET_WIDTH * TARGET_HEIGHT * 1);
+    
     png_color palette[256];
     int palette_size = 0;
 
     AVPacket *packet = av_packet_alloc();
     int file_index = 0;
     
-    /* Time management logic to enforce the requested FPS rate */
     double time_base = av_q2d(format_ctx->streams[video_stream_idx]->time_base);
     double next_sample_time = 0.0;
 
@@ -258,38 +243,27 @@ int main(int argc, char *argv[]) {
 
     while (av_read_frame(format_ctx, packet) >= 0) {
         if (packet->stream_index == video_stream_idx) {
-if (avcodec_send_packet(codec_ctx, packet) >= 0) {
-while (avcodec_receive_frame(codec_ctx, frame) >= 0) {
-double frame_time = frame->pts * time_base;
-/* Skip frames to maintain target frame-rate */
-if (file_index > 0 && frame_time < next_sample_time) {
-continue;
-}
-next_sample_time = frame_time + (1.0 / target_fps);
-/* Convert native pixel format to raw RGB24 */
-sws_scale(sws_ctx, (uint8_t const * const *)frame->data, frame->linesize, 0, h, frame_rgb->data, frame_rgb->linesize);
-/* Crop logic: Remove 4 pixels from the top boundary */
-int crop_top = 4;
-int new_w = w;
-int new_h = h - crop_top;
-uint8_t *cropped_pixels = (uint8_t *)malloc(new_w * new_h * 3);
-for (int y = 0; y < new_h; y++) {
-memcpy(cropped_pixels + y * new_w * 3, raw_pixels + (y + crop_top) * frame_rgb->linesize[0], new_w * 3);
-}
-/* Apply resizing rules based on chosen padding mode */
+            if (avcodec_send_packet(codec_ctx, packet) >= 0) {
+                while (avcodec_receive_frame(codec_ctx, frame) >= 0) {
+                    double frame_time = frame->pts * time_base;
+                    if (file_index > 0 && frame_time < next_sample_time) {
+                        continue;
+                    }
+                    next_sample_time = frame_time + (1.0 / target_fps);
+                    
+                    sws_scale(sws_ctx, (uint8_t const * const *)frame->data, frame->linesize, 0, h, frame_rgb->data, frame_rgb->linesize);
+                    
 if (padding_mode == 1) {
-resize_and_pad(cropped_pixels, new_w, new_h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
+resize_and_pad(raw_pixels, w, h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
 } else {
-resize_image_direct(cropped_pixels, new_w, new_h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
+resize_image_direct(raw_pixels, w, h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
 }
-/* Run palette quantization and save final 8-bit PNG file */
 quantize_floyd_steinberg(canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT, max_colors, indexed_pixels, palette, &palette_size);
-char png_name[64];
-sprintf(png_name, "PNG/G_%06d.PNG", file_index);
+char png_name[256];
+sprintf(png_name, "%s/G_%06d.PNG", output_dir, file_index);
 write_png_indexed(png_name, TARGET_WIDTH, TARGET_HEIGHT, indexed_pixels, palette, palette_size);
 printf("\r[Extraction] Frame: %d | Time: %.2fs", file_index, frame_time);
 fflush(stdout);
-free(cropped_pixels);
 file_index++;
 }
 }
@@ -297,7 +271,6 @@ file_index++;
 av_packet_unref(packet);
 }
 printf("\nDone! %d image frames generated.\n", file_index);
-/* Full FFmpeg memory context and buffer cleanup */
 free(indexed_pixels); free(canvas_pixels);
 av_free(raw_pixels);
 av_frame_free(&frame_rgb); av_frame_free(&frame);

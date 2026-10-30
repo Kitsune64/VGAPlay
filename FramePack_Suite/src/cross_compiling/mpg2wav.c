@@ -39,6 +39,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    /* --- Required legacy registration for Windows XP (FFmpeg < 4.0) --- */
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 9, 100)
+    av_register_all();
+#endif
+
     char *input_filename = argv[1];
     uint32_t target_sample_rate = 11025;
 
@@ -77,7 +82,6 @@ int main(int argc, char *argv[]) {
     
     if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
         printf("Could not open audio decoder.\n");
-        avcodec_free_context(&codec_ctx);
         avformat_close_input(&format_ctx);
         return 1;
     }
@@ -85,23 +89,27 @@ int main(int argc, char *argv[]) {
     /* 2. Configure the Software Resampler (libswresample) */
     SwrContext *swr_ctx = swr_alloc();
     
-    /* Set input configuration from the source video file automatically */
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 24, 100)
     av_opt_set_chlayout(swr_ctx, "in_chlayout", &codec_ctx->ch_layout, 0);
     av_opt_set_int(swr_ctx, "in_sample_rate", codec_ctx->sample_rate, 0);
     av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", codec_ctx->sample_fmt, 0);
 
-    /* Set hardcoded target properties required by retro Sound Blaster cards */
     AVChannelLayout mono_layout;
-    av_channel_layout_default(&mono_layout, 1); /* 1 channel = Mono */
+    av_channel_layout_default(&mono_layout, 1);
     av_opt_set_chlayout(swr_ctx, "out_chlayout", &mono_layout, 0);
+#else
+    av_opt_set_int(swr_ctx, "in_channel_layout", codec_ctx->channel_layout, 0);
+    av_opt_set_int(swr_ctx, "in_sample_rate", codec_ctx->sample_rate, 0);
+    av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", codec_ctx->sample_fmt, 0);
+    av_opt_set_int(swr_ctx, "out_channel_layout", AV_CH_LAYOUT_MONO, 0);
+#endif
+
     av_opt_set_int(swr_ctx, "out_sample_rate", target_sample_rate, 0);
-    /* AV_SAMPLE_FMT_U8 represents 8-bit unsigned PCM data bytes */
     av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_U8, 0);
 
     if (swr_init(swr_ctx) < 0) {
         printf("Failed to initialize the audio resampler context.\n");
         swr_free(&swr_ctx);
-        avcodec_free_context(&codec_ctx);
         avformat_close_input(&format_ctx);
         return 1;
     }
@@ -111,7 +119,6 @@ int main(int argc, char *argv[]) {
     if (!f_wav) {
         printf("Error opening AUDIO.WAV for writing.\n");
         swr_free(&swr_ctx);
-        avcodec_free_context(&codec_ctx);
         avformat_close_input(&format_ctx);
         return 1;
     }
@@ -136,17 +143,14 @@ int main(int argc, char *argv[]) {
             if (avcodec_send_packet(codec_ctx, packet) >= 0) {
                 while (avcodec_receive_frame(codec_ctx, frame) >= 0) {
                     
-                    /* Calculate upper bound allocation room for converted samples buffer */
                     int max_out_samples = av_rescale_rnd(swr_get_delay(swr_ctx, codec_ctx->sample_rate) + frame->nb_samples, target_sample_rate, codec_ctx->sample_rate, AV_ROUND_UP);
                     
                     uint8_t *output_buffer = NULL;
                     av_samples_alloc(&output_buffer, NULL, 1, max_out_samples, AV_SAMPLE_FMT_U8, 0);
 
-                    /* High-fidelity resample, downmix and hardware level quantization */
                     int out_samples = swr_convert(swr_ctx, &output_buffer, max_out_samples, (const uint8_t **)frame->data, frame->nb_samples);
                     
                     if (out_samples > 0) {
-                        /* 1 sample = 1 byte since format layout is Mono 8-bit unsigned PCM */
                         fwrite(output_buffer, 1, out_samples, f_wav);
                         data_bytes_written += out_samples;
                     }
@@ -158,7 +162,6 @@ int main(int argc, char *argv[]) {
         av_packet_unref(packet);
     }
 
-    /* 5. Finalize file boundaries and correct sizing data metadata fields */
     header.subchunk2_size = data_bytes_written;
     header.chunk_size = sizeof(wav_header_t) - 8 + data_bytes_written;
     
@@ -166,7 +169,6 @@ int main(int argc, char *argv[]) {
     fwrite(&header, sizeof(wav_header_t), 1, f_wav);
     fclose(f_wav);
 
-    /* Context releases and allocation cleanup cycles */
     av_frame_free(&frame);
     av_packet_free(&packet);
     swr_free(&swr_ctx);

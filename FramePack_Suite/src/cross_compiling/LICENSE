@@ -1,0 +1,131 @@
+================================================================================
+                       FramePack Suite Distribution License                        
+================================================================================
+
+The core source code of FramePack Suite created by the author is licensed 
+under the MIT License. This distribution also incorporates third-party open 
+source components compiled from source in the 'lib' directory, each governed 
+by its respective permissive license.
+
+Additionally, compiled binary distributions include third-party shared runtime
+libraries linked dynamically, fully compliant with open-source licensing.
+
+All embedded and linked components are compatible with an MIT distribution.
+
+
+===============================================================================
+1. CORE FRAMEPACK SUITE CODE LICENSE (MIT License)
+===============================================================================
+Copyright (c) 2026 Kitsune64 on Github
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+===============================================================================
+2. EMBEDDED COMPONENTS LICENSES (Located in the 'lib'or 'include' directory)
+===============================================================================
+
+--- A. LZ4 Compression Layout & xxHash Checksum Engine (BSD 2-Clause License) ---
+Copyright (c) Yann Collet
+
+Redistribution and use in source and binary forms, with or without 
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this 
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, 
+  this list of conditions and the following disclaimer in the documentation 
+  and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE 
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--- B. libpng Structural Encoder (libpng License) ---
+Copyright (c) 1995-2019 Cosmin Truta and libpng contributors
+
+The PNG Reference Library is supplied "AS IS". The Contributing Authors
+and Group 42, Inc. disclaim all warranties, expressed or implied,
+including, without limitation, the warranties of merchantability and of
+fitness for any purpose. The Contributing Authors and Group 42, Inc.
+assume no liability for direct, indirect, incidental, special, exemplary,
+or consequential damages, which may result from the use of the PNG
+Reference Library, even if advised of the possibility of such damage.
+
+Permission is hereby granted to use, copy, modify, and distribute this
+source code, or portions hereof, for any purpose, without fee, subject
+to the following restrictions:
+
+1. The origin of this source code must not be misrepresented.
+2. Altered source versions must be plainly marked as such and must not
+   be misrepresented as being the original source.
+3. This Copyright notice may not be removed or altered from any source
+   or altered source distribution.
+
+
+--- C. zlib Core Deflate Backend (zlib License) ---
+Copyright (c) Jean-loup Gailly and Mark Adler
+
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such and must not be
+   misrepresented as being the original source.
+3. This notice may not be removed or altered from any source distribution.
+
+
+===============================================================================
+3. LINKED RUNTIME COMPONENTS (Shared DLLs distributed with binary packages)
+===============================================================================
+
+--- FFmpeg Multimedia Framework (LGPL v3.0 License) ---
+Copyright (c) FFmpeg Team
+
+The compiled binary packages of FramePack Suite distribute and interface with
+the FFmpeg multimedia framework libraries dynamically (via external .dll files).
+
+FFmpeg is a trademark of Fabrice Bellard (originator of the FFmpeg project).
+The FFmpeg binaries bundled in this distribution are licensed under the GNU 
+Lesser General Public License (LGPL) version 3.0 or later.
+
+In strict compliance with LGPL guidelines:
+1. The FFmpeg components are linked DYNAMICALLY ONLY. The core FramePack Suite
+   executables remain isolated, independent binaries.
+2. The unmodified third-party shared .dll libraries can be freely upgraded, 
+   replaced, or re-linked by the end user at any time.
+3. This notice explicitly provides the required attribution and mechanism 
+   of use, fully preserving the standalone MIT License status of the core 
+   FramePack Suite software programs.

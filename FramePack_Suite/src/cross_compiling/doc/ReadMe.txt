@@ -1,6 +1,6 @@
-================================================================================
+===============================================================================
                                 FRAMEPACK SUITE                                 
-================================================================================
+===============================================================================
 
 OVERVIEW
 --------
@@ -11,33 +11,32 @@ custom binary stream paired with 8-bit Sound Blaster audio, specifically
 engineered for smooth, high-performance playback on legacy MS-DOS hardware.
 
 All utilities in this suite are 100% standalone, fully cross-platform (Linux, 
-Windows 32-bit, and Windows 64-bit environments), and distributed under the 
-permissive open-source MIT License.
+Windows 32-bit, Windows 64-bit, and Windows XP environments), and distributed
+under the permissive open-source MIT License.
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 PROGRAM COMPONENT DESCRIPTIONS
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 
 1. PNGExtract (`PNGExtract.c`)
-   - Purpose: Ingests any modern video file (such as MP4, MKV, AVI) via the 
-     native FFmpeg API. It extracts individual frames at a target frame rate,
-     removes top-boundary artifacts (4-pixel crop), resizes the stream into a 
-     VGA-compatible 320x200 canvas (with optional aspect ratio padding), and 
-     applies high-quality Floyd-Steinberg error diffusion dithering to map the 
-     output into an optimized 8-bit indexed PNG stream.
+   - Purpose: Ingests a video file via the native FFmpeg API. It extracts 
+     individual frames at a target frame rate, resizes the stream into a 
+     VGA-compatible 320x200 canvas (with optional proportional aspect ratio 
+     padding), and applies high-quality Floyd-Steinberg error diffusion 
+     dithering to map the output into an optimized 8-bit indexed PNG stream.
    - Usage:
-     PNGExtract <input_file> [fps] [max_colors] [padding_mode (0/1)]
+     PNGExtract <input_file> <output_dir> <fps> <max_colors> <padding_mode (0/1)>
    - Example:
-     PNGExtract video.mp4 15 256 1
+     PNGExtract video.mp4 ./PNG 15 256 1
 
 2. mpg2wav (`mpg2wav.c`)
    - Purpose: Extracts and demuxes the primary audio track from any multimedia 
      source file via FFmpeg. It leverages high-fidelity hardware-level software
-     resampling to downmix multi-channel audio (Stereo, 5.1) into Mono, applies 
-     anti-aliasing filters to downsample the frequency to a strict 11025 Hz 
-     rate, and quantizes the depth to 8-bit Unsigned PCM. The output is a clean
-     Microsoft RIFF WAV structure with zero bloated metadata, ensuring flawless 
+     resampling to downmix multi-channel audio into Mono, applies anti-aliasing
+     filters to downsample the frequency to a strict 11025 Hz rate, and 
+     quantizes the depth to 8-bit Unsigned PCM. The output is a clean Microsoft
+     RIFF WAV structure with zero bloated metadata, ensuring flawless 
      compatibility with retro Sound Blaster 1.0/2.0/Pro/16 DAC hardware under 
      native MS-DOS.
    - Usage:
@@ -71,9 +70,9 @@ PROGRAM COMPONENT DESCRIPTIONS
      Verificator video.bin 150 extracted_frame.png
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 PIPELINE WORKFLOW RECOMMENDATION
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 To process a video for your retro MS-DOS player, follow this sequence:
   1. Run PNGExtract on your source video to generate dithered 320x200 PNG frames.
   2. Run mpg2wav on the same video to extract the Sound Blaster compatible WAV.
@@ -81,9 +80,9 @@ To process a video for your retro MS-DOS player, follow this sequence:
   4. (Optional) Run Verificator on 'video.bin' to confirm block validities.
 
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 LICENSES & THIRD-PARTY COMPONENTS SUMMARY
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 The core source code of FramePack Suite is licensed under the MIT License. 
 However, to provide an out-of-the-box compilable and standalone experience, it 
 incorporates several open-source libraries. All embedded and linked assets 
@@ -104,4 +103,4 @@ interface with FFmpeg via DYNAMIC LINKING ONLY (.dll files). These libraries
 remain independent external binaries that can be freely updated or replaced by 
 the user, keeping the core FramePack Suite programs clean, isolated, and fully 
 protected under their native MIT License status.
-================================================================================
+===============================================================================

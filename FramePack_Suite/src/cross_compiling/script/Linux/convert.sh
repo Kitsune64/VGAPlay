@@ -30,7 +30,7 @@ if [ ! -f "$VERIFICATOR_BIN" ]; then
 fi
 
 # 1. Ask for the MPG file
-printf "Enter the video file name with its extension (.mpg): "
+printf "Enter the video file name with its extension (ex: video.mp4): "
 read -r mpg_file
 
 if [ -z "$mpg_file" ]; then
@@ -91,7 +91,7 @@ esac
 echo "-----------------------------------------"
 echo "Running PNGExtract..."
 echo "-----------------------------------------"
-"$PNG_EXTRACT_BIN" "$mpg_file" "$fps" "$max_colors" "$padding_mode"
+"$PNG_EXTRACT_BIN" "$mpg_file" "PNG" "$fps" "$max_colors" "$padding_mode"
 
 # --- STEP 2: Run mpg2wav ---
 echo "-----------------------------------------"
