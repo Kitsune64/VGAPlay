@@ -9,7 +9,7 @@ The ecosystem provides two primary executable segments:
 ---
 
 ## 📺 Demonstration
-[How to use VGAPlay Video](https://youtu.be) *(Old version overview)*
+[How to use VGAPlay Video](https://www.youtube.com/watch?v=YW1tvyo3zkU&t) *(Old version overview)*
 
 ---
 
