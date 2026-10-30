@@ -1,10 +1,22 @@
 ================================================================================
-                       LICENSE AND THIRD-PARTY NOTICES                          
+                       FramePack Suite Distribution License                        
 ================================================================================
 
-MAIN PROJECT LICENSE: MIT LICENSE
---------------------------------------------------------------------------------
-Copyright (c) 2026 Kitsune64
+The core source code of FramePack Suite created by the author is licensed 
+under the MIT License. This distribution also incorporates third-party open 
+source components compiled from source in the 'lib' directory, each governed 
+by its respective permissive license.
+
+Additionally, compiled binary distributions include third-party shared runtime
+libraries linked dynamically, fully compliant with open-source licensing.
+
+All embedded and linked components are compatible with an MIT distribution.
+
+
+===============================================================================
+1. CORE FRAMEPACK SUITE CODE LICENSE (MIT License)
+===============================================================================
+Copyright (c) 2026 Kitsune64 on Github
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -25,73 +37,95 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-================================================================================
-               PART 1: EMBEDDED SOURCE CODE DEPENDENCIES                        
-================================================================================
-The following components are embedded and compiled from source code within this
-repository. Original copyright headers remain intact inside the source files.
+===============================================================================
+2. EMBEDDED COMPONENTS LICENSES (Located in the 'lib/include' directory)
+===============================================================================
 
-1. PL_MPEG (pl_mpeg.h)
---------------------------------------------------------------------------------
-* License     : MIT License
-* Copyright   : Dominic Szablewski
+--- A. LZ4 Compression Layout & xxHash Checksum Engine (BSD 2-Clause License) ---
+Copyright (c) Yann Collet
 
-2. LZ4 (lz4.c, lz4hc.c, lz4frame.c, lz4.h, lz4hc.h, lz4frame.h)
---------------------------------------------------------------------------------
-* License     : BSD 2-Clause License ("Simplified BSD License")
-* Copyright   : Yann Collet (2011-present)
-* Requirement : Retain the copyright notice, list of conditions, and the
-                disclaimer in the source headers.
+Redistribution and use in source and binary forms, with or without 
+modification, are permitted provided that the following conditions are met:
 
-3. xxHash (xxhash.c, xxhash.h)
---------------------------------------------------------------------------------
-* License     : BSD 2-Clause License ("Simplified BSD License")
-* Copyright   : Yann Collet (2012-2016)
-* Requirement : Retain the copyright notice, list of conditions, and the
-                disclaimer in the source headers.
+* Redistributions of source code must retain the above copyright notice, this 
+  list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice, 
+  this list of conditions and the following disclaimer in the documentation 
+  and/or other materials provided with the distribution.
 
-4. libpng (png.c, pngread.c, pngwrite.c, png.h, etc.)
---------------------------------------------------------------------------------
-* License     : libpng License (BSD-style permissive license)
-* Copyright   : Cosmin Truta, Glenn Randers-Pehrson, Andreas Dilger,
-                Guy Eric Schalnat, and contributors.
-* Requirement : Preserve original header comments containing copyright notices
-                and terms of use.
-
-5. zlib (adler32.c, compress.c, deflate.c, inflate.c, zlib.h, zconf.h, etc.)
---------------------------------------------------------------------------------
-* License     : zlib License
-* Copyright   : Jean-loup Gailly and Mark Adler
-* Requirement : Retain copyright notices and origin statements in the source
-                file headers.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE 
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE 
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-================================================================================
-               PART 2: PRE-COMPILED SHARED RUNTIMES                             
-================================================================================
-The following binary runtimes are embedded for automated cross-platform 
-distribution and runtime execution setup.
+--- B. libpng Structural Encoder (libpng License) ---
+Copyright (c) 1995-2019 Cosmin Truta and libpng contributors
 
-1. FFmpeg (ffmpeg/win32/ and ffmpeg/win64/)
---------------------------------------------------------------------------------
-* License     : LGPL v3.0 (Shared / Dynamic linking build)
-* Homepage    : https://ffmpeg.org
-* Compliance  : In strict accordance with the LGPL requirements, FFmpeg is
-                integrated via DYNAMIC LINKING ONLY (external .dll files).
-                The user retains the right to swap out these shared libraries.
-                Consequently, the core suite executable code remains unlinked
-                statically and fully protected under its native MIT License.
-                Original license and README documents are preserved within
-                their respective architecture directories.
+The PNG Reference Library is supplied "AS IS". The Contributing Authors
+and Group 42, Inc. disclaim all warranties, expressed or implied,
+including, without limitation, the warranties of merchantability and of
+fitness for any purpose. The Contributing Authors and Group 42, Inc.
+assume no liability for direct, indirect, incidental, special, exemplary,
+or consequential damages, which may result from the use of the PNG
+Reference Library, even if advised of the possibility of such damage.
+
+Permission is hereby granted to use, copy, modify, and distribute this
+source code, or portions hereof, for any purpose, without fee, subject
+to the following restrictions:
+
+1. The origin of this source code must not be misrepresented.
+2. Altered source versions must be plainly marked as such and must not
+   be misrepresented as being the original source.
+3. This Copyright notice may not be removed or altered from any source
+   or altered source distribution.
 
 
-================================================================================
-CONCLUSION AND GENERAL COMPLIANCE NOTE                                          
-================================================================================
-All components embedded or linked by this suite use permissive open-source
-licenses (MIT, BSD 2-Clause, libpng, zlib) or dynamic LGPL linking.
-Integrating these assets into an MIT-licensed repository is fully permitted
-provided that all original copyright header comments inside the source files
-remain intact.
-================================================================================
+--- C. zlib Core Deflate Backend (zlib License) ---
+Copyright (c) Jean-loup Gailly and Mark Adler
 
+This software is provided 'as-is', without any express or implied
+warranty. In no event will the authors be held liable for any damages
+arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it
+freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not
+   claim that you wrote the original software. If you use this software
+   in a product, an acknowledgment in the product documentation would be
+   appreciated but is not required.
+2. Altered source versions must be plainly marked as such and must not be
+   misrepresented as being the original source.
+3. This notice may not be removed or altered from any source distribution.
+
+
+===============================================================================
+3. LINKED RUNTIME COMPONENTS (Shared DLLs distributed with binary packages)
+===============================================================================
+
+--- FFmpeg Multimedia Framework (LGPL v3.0 License) ---
+Copyright (c) FFmpeg Team
+
+The compiled binary packages of FramePack Suite distribute and interface with
+the FFmpeg multimedia framework libraries dynamically (via external .dll files).
+
+FFmpeg is a trademark of Fabrice Bellard (originator of the FFmpeg project).
+The FFmpeg binaries bundled in this distribution are licensed under the GNU 
+Lesser General Public License (LGPL) version 3.0 or later.
+
+In strict compliance with LGPL guidelines:
+1. The FFmpeg components are linked DYNAMICALLY ONLY. The core FramePack Suite
+   executables remain isolated, independent binaries.
+2. The unmodified third-party shared .dll libraries can be freely upgraded, 
+   replaced, or re-linked by the end user at any time.
+3. This notice explicitly provides the required attribution and mechanism 
+   of use, fully preserving the standalone MIT License status of the core 
+   FramePack Suite software programs.
