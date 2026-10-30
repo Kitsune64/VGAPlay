@@ -111,9 +111,16 @@ The suite includes an optimized multi-target `Makefile` supporting native Linux 
 
 ## ⚖️ Licensing & Distribution Information
 
+## ⚖️ Licensing & Distribution Information
+
+The VGAPlay project aggregates components under highly permissive, compatible open-source legal frameworks:
+
+## ⚖️ Licensing & Distribution Information
+
 The VGAPlay project aggregates components under highly permissive, compatible open-source legal frameworks:
 
 * **Core Software Suite (`VGAPLAY.EXE`, `VERIFMOV.EXE`, FramePack Suite):** Distributed under the terms of the **MIT License**. Copyright (c) 2026 Kitsune64 on GitHub.
+* **External Multimedia Libraries (`FFmpeg`):** Utilized for modern video container ingestion, frame extraction, and audio resampling (`libswresample`). Governed under the terms of the **GNU Lesser General Public License (LGPL) version 2.1 or later** (or GPL depending on configuration flags).
 * **Embedded Compression Frameworks (`LZ4` & `xxHash`):** Integrated directly into source streams. Governed under the terms of the **BSD 2-Clause License**. Copyright (C) Yann Collet.
 * **External Codec Backends (`libpng` & `zlib`):** Compiled statically from source files inside the repository. Governed under the terms of the **libpng License** and the **zlib License** respectively. Copyright (c) Cosmin Truta, Jean-loup Gailly, Mark Adler, and contributors.
 * **Auxiliary DOS Runtime Extender (`CWSDPMI.EXE`):** Exclusive property of its author, distributed alongside compiled binaries under the **GNU General Public License version 2 (GNU GPL v2)** via official binary distribution clearings. Copyright (C) 1995-2010 Charles W. Sandmann.
