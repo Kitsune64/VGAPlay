@@ -1,6 +1,6 @@
 # VGAPlay
 
-The VGAPlay Project is a high-performance, synchronized real-time video and audio playback ecosystem engineered for legacy DOS architectures. Developed as a modern architectural fork of the original *DOSVideoPlayer* by Netdex (2017), this project bridges modern multi-format video standards with authentic x86 retro hardware.
+The VGAPlay Project is a synchronized real-time video and audio playback ecosystem engineered for legacy DOS architectures. Developed as a modern architectural fork of the original *DOSVideoPlayer* by Netdex (2017), this project bridges modern multi-format video standards with authentic x86 retro hardware.
 
 The ecosystem provides two primary executable segments:
 * **Target Player (`VGAPLAY.EXE`):** A native real-time multimedia player running in standard VGA Mode 13h (320x200 resolution, 8-bit indexed 256-color map) built for legacy PC environments (MS-DOS, FreeDOS, and DOSBox).
