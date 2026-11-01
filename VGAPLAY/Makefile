@@ -69,3 +69,4 @@ clean:
 	-del bin\\README.TXT
 	-del /F /Q bin\\DOC\\*.*
 	-rmdir /S /Q bin\\DOC
+	
