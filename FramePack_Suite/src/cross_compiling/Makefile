@@ -7,10 +7,10 @@ CROSS_CC_32 = i686-w64-mingw32-gcc
 CROSS_CC_64 = x86_64-w64-mingw32-gcc
 
 BASE_DIR = bin
-LINUX_DIR = $(BASE_DIR)/Linux
-WINDOWS32_DIR = $(BASE_DIR)/Win32
-WINDOWS64_DIR = $(BASE_DIR)/Win64
-WINDOWSXP_DIR = $(BASE_DIR)/WinXP
+LINUX_DIR = $(BASE_DIR)/Linux/FramePack_Suite
+WINDOWS32_DIR = $(BASE_DIR)/Win32/FramePack_Suite
+WINDOWS64_DIR = $(BASE_DIR)/Win64/FramePack_Suite
+WINDOWSXP_DIR = $(BASE_DIR)/WinXP/FramePack_Suite
 
 WIN32_FFMPEG_DIR = ./ffmpeg/win32
 WIN64_FFMPEG_DIR = ./ffmpeg/win64
@@ -18,7 +18,7 @@ WINXP_FFMPEG_DIR = ./ffmpeg/winxp
 
 SCRIPT_NAME = convert.sh
 CFLAGS = -O3 -Iinclude -include zlib.h -DPNG_NO_CONFIG_H -D_POSIX_C_SOURCE=200809L -Wall -Wextra -Wno-discarded-qualifiers
-CFLAGS_XP32 = $(CFLAGS) -D_WIN32_WINNT=0x0501 -D__MSVCRT_VERSION__=0x0600 -mno-stack-arg-probe
+CFLAGS_XP32 = $(CFLAGS) -D_WIN32_WINNT=0x0501 -D__MSVCRT_VERSION__=0x0600 -mno-stack-arg-probe -Wno-attributes -D__WINDOWS_XP__
 STATIC_GCC_FLAGS = -static-libgcc -static-libstdc++ -Wl,-Bstatic -lgcc -lgcc_eh -Wl,-Bdynamic
 
 FFMPEG_LIBS = libavformat libavcodec libswscale libswresample libavutil libavfilter libpng
@@ -46,9 +46,9 @@ EXE_VERIF_WINXP = $(WINDOWSXP_DIR)/Verificator.exe
 EXE_EXTRACT_WINXP = $(WINDOWSXP_DIR)/PNGExtract.exe
 EXE_MPG2WAV_WINXP = $(WINDOWSXP_DIR)/mpg2wav.exe
 
-.PHONY: all suite linux windows32 windows64 windowsxp clean
+.PHONY: all suite linux windows32 windows64 windowsxp archive clean
 all: suite
-suite: linux windows32 windows64 windowsxp
+suite: linux windows32 windows64 windowsxp archive
 
 $(LINUX_DIR):
 	mkdir -p $(LINUX_DIR)
@@ -72,10 +72,11 @@ linux: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(LINUX_D
 windows32: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WINDOWS32_DIR)
 	$(CROSS_CC_32) $(CFLAGS) FramePack.c $(SRCS_LIBS) -o $(EXE_WIN32) $(STATIC_GCC_FLAGS) -lm
 	$(CROSS_CC_32) $(CFLAGS) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WIN32) $(STATIC_GCC_FLAGS) -lm
-	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN32_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavfilter -lavformat -lavcodec -lswscale -lavutil -lm
-	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN32_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
+	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -mthreads -I$(WIN32_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavfilter -lavformat -lavcodec -lswscale -lavutil -lm
+	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -mthreads -I$(WIN32_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
 	@if [ -f "doc/ReadMe.txt" ]; then cp "doc/ReadMe.txt" "$(WINDOWS32_DIR)/"; fi
 	@if [ -d "$(WIN32_FFMPEG_DIR)/bin" ]; then cp $(WIN32_FFMPEG_DIR)/bin/*.dll $(WINDOWS32_DIR)/; fi
+	@if [ -f "deps/WinXP/libgcc_s_dw2-1.dll" ]; then cp "deps/WinXP/libgcc_s_dw2-1.dll" "$(WINDOWS32_DIR)/"; fi
 	@if [ -f "script/WinXP/convert.bat" ]; then cp "script/WinXP/convert.bat" "$(WINDOWS32_DIR)/"; fi
 	@if [ -f "samples/demo.mp4" ]; then cp "samples/demo.mp4" "$(WINDOWS32_DIR)/"; fi
 	@if [ -f "LICENSE" ]; then cp "LICENSE" "$(WINDOWS32_DIR)/"; fi
@@ -115,6 +116,15 @@ windowsxp: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WIN
 	@if [ -f "$(WINXP_FFMPEG_DIR)/LICENSE.md" ]; then cp "$(WINXP_FFMPEG_DIR)/LICENSE.md" "$(WINDOWSXP_DIR)/doc/FFMPEG_LICENSE.md"; \
 	elif [ -f "$(WINXP_FFMPEG_DIR)/LICENSE.txt" ]; then cp "$(WINXP_FFMPEG_DIR)/LICENSE.txt" "$(WINDOWSXP_DIR)/doc/FFMPEG_LICENSE.txt"; \
 	elif [ -f "$(WINXP_FFMPEG_DIR)/LICENSE" ]; then cp "$(WINXP_FFMPEG_DIR)/LICENSE" "$(WINDOWSXP_DIR)/doc/FFMPEG_LICENSE"; fi
+
+archive:
+	@read -p "Which version do you build? " VERSION; \
+	echo "Creating archives for version $$VERSION..."; \
+	tar -czf $(BASE_DIR)/FramePack_Suite_$${VERSION}_Linux.tar.gz -C $(BASE_DIR)/Linux FramePack_Suite; \
+	cd $(BASE_DIR)/Win32 && 7z a ../FramePack_Suite_$${VERSION}_Win32.7z FramePack_Suite && cd - > /dev/null; \
+	cd $(BASE_DIR)/Win64 && 7z a ../FramePack_Suite_$${VERSION}_Win64.7z FramePack_Suite && cd - > /dev/null; \
+	cd $(BASE_DIR)/WinXP && 7z a ../FramePack_Suite_$${VERSION}_WinXP.7z FramePack_Suite && cd - > /dev/null; \
+	echo "All archives successfully created in $(BASE_DIR)/!"
 
 clean:
 	@echo "Cleaning up all compiled executables..."

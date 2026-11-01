@@ -37,54 +37,7 @@
 AVFilterGraph *filter_graph = NULL;
 AVFilterContext *buffersrc_ctx = NULL;
 AVFilterContext *buffersink_ctx = NULL;
-/*
-int init_filters(const char *filter_spec, AVCodecContext *dec_ctx, AVRational time_base) {
-    char args[512];
-    int ret = 0;
 
-    filter_graph = avfilter_graph_alloc();
-    const AVFilter *buffersrc  = avfilter_get_by_name("buffer");
-    const AVFilter *buffersink = avfilter_get_by_name("buffersink");
-    AVFilterInOut *outputs = avfilter_inout_alloc();
-    AVFilterInOut *inputs  = avfilter_inout_alloc();
-
-    if (!filter_graph || !buffersrc || !buffersink) return AVERROR(ENOMEM);
-
-    // Configuration du buffer d'entrée avec les caractéristiques de la vidéo source
-    snprintf(args, sizeof(args),
-             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
-             dec_ctx->width, dec_ctx->height, dec_ctx->pix_fmt,
-             time_base.num, time_base.den,
-             dec_ctx->sample_aspect_ratio.num, dec_ctx->sample_aspect_ratio.den);
-
-    ret = avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in", args, NULL, filter_graph);
-    if (ret < 0) goto end;
-
-    ret = avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out", NULL, NULL, filter_graph);
-    if (ret < 0) goto end;
-
-    // Définition de la chaîne de filtres (ex: "fps=15")
-    outputs->name       = av_strdup("in");
-    outputs->filter_ctx = buffersrc_ctx;
-    outputs->pad_idx    = 0;
-    outputs->next       = NULL;
-
-    inputs->name       = av_strdup("out");
-    inputs->filter_ctx = buffersink_ctx;
-    inputs->pad_idx    = 0;
-    inputs->next       = NULL;
-
-    ret = avfilter_graph_parse_ptr(filter_graph, filter_spec, &inputs, &outputs, NULL);
-    if (ret < 0) goto end;
-
-    ret = avfilter_graph_config(filter_graph, NULL);
-
-end:
-    avfilter_inout_free(&inputs);
-    avfilter_inout_free(&outputs);
-    return ret;
-}
-*/
 /* Mode 1: Fixed height to 160, proportional width, centered on a 320x200 canvas */
 void resize_and_pad(uint8_t *src, int src_w, int src_h, uint8_t *dst, int dst_w, int dst_h) {
     memset(dst, 0, dst_w * dst_h * 3);
@@ -237,8 +190,9 @@ int main(int argc, char *argv[]) {
 
     /* --- Required legacy registration for Windows XP (FFmpeg < 4.0) --- */
     #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 9, 100)
-        av_register_all();
-    #endif
+		av_register_all();
+		avfilter_register_all();
+	#endif
 
     char *input_filename = argv[1];
     char *output_dir = argv[2];
@@ -271,6 +225,85 @@ int main(int argc, char *argv[]) {
     avcodec_parameters_to_context(codec_ctx, codec_params);
     if (avcodec_open2(codec_ctx, codec, NULL) < 0) return 1;
 
+    // ==========================================
+    // INITIALISATION UNIQUE DU FILTRE EN AMONT
+    // ==========================================
+    filter_graph = avfilter_graph_alloc();
+    const AVFilter *buffersrc  = avfilter_get_by_name("buffer");
+    const AVFilter *buffersink = avfilter_get_by_name("buffersink");
+    AVFilterInOut *outputs = avfilter_inout_alloc();
+    AVFilterInOut *inputs  = avfilter_inout_alloc();
+
+    if (!filter_graph || !buffersrc || !buffersink || !outputs || !inputs) {
+        fprintf(stderr, "Failed to allocate filter components\n");
+        return 1;
+    }
+
+	AVRational time_base = format_ctx->streams[video_stream_idx]->time_base;
+    char args[512];
+    
+#if defined(__linux__)
+    // --- 1. Linux : FFmpeg récent, exige le range explicite ---
+    snprintf(args, sizeof(args),
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:range=tv",
+             codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
+             time_base.num, time_base.den,
+             codec_ctx->sample_aspect_ratio.num, codec_ctx->sample_aspect_ratio.den);
+
+#elif defined(_WIN64)
+    // --- 2. Windows 11 64-bit (Mise à jour : ajout de range=tv) ---
+    snprintf(args, sizeof(args),
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:range=tv",
+             codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
+             time_base.num, time_base.den,
+             codec_ctx->sample_aspect_ratio.num, codec_ctx->sample_aspect_ratio.den);
+
+#elif defined(_WIN32)
+    #if defined(__WINDOWS_XP__)
+    // --- 3. Windows XP 32-bit ---
+    snprintf(args, sizeof(args),
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
+             codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
+             time_base.num, time_base.den,
+             codec_ctx->sample_aspect_ratio.num, codec_ctx->sample_aspect_ratio.den);
+    #else
+	// --- 4. Windows 11 32-bit (Mise à jour : ajout de range=tv) ---
+    snprintf(args, sizeof(args),
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:range=tv",
+             codec_ctx->width, codec_ctx->height, codec_ctx->pix_fmt,
+             time_base.num, time_base.den,
+             codec_ctx->sample_aspect_ratio.num, codec_ctx->sample_aspect_ratio.den);
+    #endif
+#endif
+
+    if (avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in", args, NULL, filter_graph) < 0 ||
+        avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out", NULL, NULL, filter_graph) < 0) {
+        fprintf(stderr, "Failed to create filter instances\n");
+        return 1;
+    }
+
+    outputs->name       = av_strdup("in");
+    outputs->filter_ctx = buffersrc_ctx;
+    outputs->pad_idx    = 0;
+    outputs->next       = NULL;
+
+    inputs->name       = av_strdup("out");
+    inputs->filter_ctx = buffersink_ctx;
+    inputs->pad_idx    = 0;
+    inputs->next       = NULL;
+
+    char filter_spec[128];
+    snprintf(filter_spec, sizeof(filter_spec), "scale=%d:%d,fps=%.2f", codec_ctx->width, codec_ctx->height, target_fps);
+
+    if (avfilter_graph_parse_ptr(filter_graph, filter_spec, &inputs, &outputs, NULL) < 0 ||
+        avfilter_graph_config(filter_graph, NULL) < 0) {
+        fprintf(stderr, "Failed to parse or configure filter graph\n");
+        return 1;
+    }
+    avfilter_inout_free(&inputs);
+    avfilter_inout_free(&outputs);
+    // ==========================================
+
     AVFrame *frame = av_frame_alloc();
     AVFrame *filt_frame = av_frame_alloc();
     AVFrame *frame_rgb = av_frame_alloc();
@@ -290,9 +323,8 @@ int main(int argc, char *argv[]) {
     png_color palette[256];
     int palette_size = 0;
 
-    AVPacket *packet = av_packet_alloc();
+  AVPacket *packet = av_packet_alloc();
     int file_index = 0;
-    int filter_initialized = 0; // Drapeau pour l'initialisation paresseuse unique
 
     printf("FFmpeg extraction processing with CFR filter (FPS: %.1f)...\n", target_fps);
 
@@ -300,67 +332,18 @@ int main(int argc, char *argv[]) {
         if (packet->stream_index == video_stream_idx) {
             if (avcodec_send_packet(codec_ctx, packet) >= 0) {
                 while (avcodec_receive_frame(codec_ctx, frame) >= 0) {
-                    
-                    // --- INITIALISATION PARESSEUSE SUR LA 1ère FRAME ---
-                    if (!filter_initialized) {
-                        filter_graph = avfilter_graph_alloc();
-                        const AVFilter *buffersrc  = avfilter_get_by_name("buffer");
-                        const AVFilter *buffersink = avfilter_get_by_name("buffersink");
-                        AVFilterInOut *outputs = avfilter_inout_alloc();
-                        AVFilterInOut *inputs  = avfilter_inout_alloc();
-
-                        if (!filter_graph || !buffersrc || !buffersink || !outputs || !inputs) {
-                            fprintf(stderr, "Failed to allocate filter components\n");
-                            return 1;
-                        }
-
-                        AVRational time_base = format_ctx->streams[video_stream_idx]->time_base;
-                        
-                        // Détermination de la plage de couleur de la frame (tv / pc)
-                        const char *range_str = "unknown";
-                        if (frame->color_range == AVCOL_RANGE_JPEG) range_str = "pc";
-                        else if (frame->color_range == AVCOL_RANGE_MPEG) range_str = "tv";
-
-                        char args[512];
-                        snprintf(args, sizeof(args),
-                                 "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:range=%s",
-                                 frame->width, frame->height, frame->format,
-                                 time_base.num, time_base.den,
-                                 codec_ctx->sample_aspect_ratio.num, codec_ctx->sample_aspect_ratio.den,
-                                 range_str);
-
-                        if (avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in", args, NULL, filter_graph) < 0 ||
-                            avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out", NULL, NULL, filter_graph) < 0) {
-                            fprintf(stderr, "Failed to create filter instances\n");
-                            return 1;
-                        }
-
-                        outputs->name       = av_strdup("in");
-                        outputs->filter_ctx = buffersrc_ctx;
-                        outputs->pad_idx    = 0;
-                        outputs->next       = NULL;
-
-                        inputs->name       = av_strdup("out");
-                        inputs->filter_ctx = buffersink_ctx;
-                        inputs->pad_idx    = 0;
-                        inputs->next       = NULL;
-
-                        char filter_spec[64];
-                        snprintf(filter_spec, sizeof(filter_spec), "fps=fps=%.2f", target_fps);
-
-                        if (avfilter_graph_parse_ptr(filter_graph, filter_spec, &inputs, &outputs, NULL) < 0 ||
-                            avfilter_graph_config(filter_graph, NULL) < 0) {
-                            fprintf(stderr, "Failed to parse or configure filter graph\n");
-                            return 1;
-                        }
-                        avfilter_inout_free(&inputs);
-                        avfilter_inout_free(&outputs);
-                        
-                        filter_initialized = 1;
+    
+                    // Forcer le range TV pour correspondre au filtre sous Linux / FFmpeg récent
+                    #if defined(__linux__) || defined(_WIN64) || !defined(__WINDOWS_XP__)
+                    if (frame->color_range == AVCOL_RANGE_UNSPECIFIED) {
+                        frame->color_range = AVCOL_RANGE_MPEG;
                     }
-                    // --------------------------------------------------
+                    #endif
 
-                    // 1. Pousser la frame décodée brute dans le filtre source
+                    // Neutraliser le chroma_loc pour tout harmoniser
+                    frame->chroma_location = AVCHROMA_LOC_UNSPECIFIED;
+
+					// 1. Pousser la frame décodée brute dans le filtre source
                     if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
                         fprintf(stderr, "Error while feeding the filtergraph\n");
                         break;
@@ -387,6 +370,7 @@ int main(int argc, char *argv[]) {
                         sprintf(png_name, "%s/G_%06d.PNG", output_dir, file_index);
                         write_png_indexed(png_name, TARGET_WIDTH, TARGET_HEIGHT, indexed_pixels, palette, palette_size);
                         
+                        // --- AFFICHAGE DE LA PROGRESSION ---
                         double current_time = (double)(file_index) / target_fps;
                         printf("\r[Extraction] Frame: %d | Time: %.2fs", file_index, current_time);
                         fflush(stdout);
