@@ -21,7 +21,7 @@ CFLAGS = -O3 -Iinclude -include zlib.h -DPNG_NO_CONFIG_H -D_POSIX_C_SOURCE=20080
 CFLAGS_XP32 = $(CFLAGS) -D_WIN32_WINNT=0x0501 -D__MSVCRT_VERSION__=0x0600 -mno-stack-arg-probe
 STATIC_GCC_FLAGS = -static-libgcc -static-libstdc++ -Wl,-Bstatic -lgcc -lgcc_eh -Wl,-Bdynamic
 
-FFMPEG_LIBS = libavformat libavcodec libswscale libswresample libavutil libpng
+FFMPEG_LIBS = libavformat libavcodec libswscale libswresample libavutil libavfilter libpng
 LINUX_FFMPEG_CFLAGS  = $(shell pkg-config --cflags $(FFMPEG_LIBS) 2>/dev/null)
 LINUX_FFMPEG_LDFLAGS = $(shell pkg-config --libs $(FFMPEG_LIBS) 2>/dev/null)
 SRCS_LIBS = $(wildcard lib/*.c)
@@ -72,7 +72,7 @@ linux: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(LINUX_D
 windows32: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WINDOWS32_DIR)
 	$(CROSS_CC_32) $(CFLAGS) FramePack.c $(SRCS_LIBS) -o $(EXE_WIN32) $(STATIC_GCC_FLAGS) -lm
 	$(CROSS_CC_32) $(CFLAGS) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WIN32) $(STATIC_GCC_FLAGS) -lm
-	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN32_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavformat -lavcodec -lswscale -lavutil -lm
+	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN32_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavfilter -lavformat -lavcodec -lswscale -lavutil -lm
 	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN32_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
 	@if [ -f "doc/ReadMe.txt" ]; then cp "doc/ReadMe.txt" "$(WINDOWS32_DIR)/"; fi
 	@if [ -d "$(WIN32_FFMPEG_DIR)/bin" ]; then cp $(WIN32_FFMPEG_DIR)/bin/*.dll $(WINDOWS32_DIR)/; fi
@@ -87,7 +87,7 @@ windows32: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WIN
 windows64: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WINDOWS64_DIR)
 	$(CROSS_CC_64) $(CFLAGS) FramePack.c $(SRCS_LIBS) -o $(EXE_WIN64) $(STATIC_GCC_FLAGS) -lm
 	$(CROSS_CC_64) $(CFLAGS) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WIN64) $(STATIC_GCC_FLAGS) -lm
-	$(CROSS_CC_64) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN64_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN64) -L$(WIN64_FFMPEG_DIR)/lib -lavformat -lavcodec -lswscale -lavutil -lm
+	$(CROSS_CC_64) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN64_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN64) -L$(WIN64_FFMPEG_DIR)/lib -lavfilter -lavformat -lavcodec -lswscale -lavutil -lm
 	$(CROSS_CC_64) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN64_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WIN64) -L$(WIN64_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
 	@if [ -f "doc/ReadMe.txt" ]; then cp "doc/ReadMe.txt" "$(WINDOWS64_DIR)/"; fi
 	@if [ -d "$(WIN64_FFMPEG_DIR)/bin" ]; then cp $(WIN64_FFMPEG_DIR)/bin/*.dll $(WINDOWS64_DIR)/; fi
@@ -103,7 +103,7 @@ windowsxp: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WIN
 	@echo "Compiling Windows XP 32-bit shared versions into $(WINDOWSXP_DIR)..."
 	$(CROSS_CC_32) $(CFLAGS_XP32) FramePack.c $(SRCS_LIBS) -o $(EXE_WINXP) $(STATIC_GCC_FLAGS) -lm
 	$(CROSS_CC_32) $(CFLAGS_XP32) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WINXP) $(STATIC_GCC_FLAGS) -lm
-	$(CROSS_CC_32) $(CFLAGS_XP32) $(STATIC_GCC_FLAGS) -mthreads -I$(WINXP_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WINXP) -L$(WINXP_FFMPEG_DIR)/lib -lavformat -lavcodec -lswscale -lavutil -lm
+	$(CROSS_CC_32) $(CFLAGS_XP32) $(STATIC_GCC_FLAGS) -mthreads -I$(WINXP_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WINXP) -L$(WINXP_FFMPEG_DIR)/lib -lavfilter -lavformat -lavcodec -lswscale -lavutil -lm
 	$(CROSS_CC_32) $(CFLAGS_XP32) $(STATIC_GCC_FLAGS) -mthreads -I$(WINXP_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WINXP) -L$(WINXP_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
 	@if [ -f "doc/ReadMe.txt" ]; then cp "doc/ReadMe.txt" "$(WINDOWSXP_DIR)/"; fi
 	@if [ -d "$(WINXP_FFMPEG_DIR)/bin" ]; then cp $(WINXP_FFMPEG_DIR)/bin/*.dll $(WINDOWSXP_DIR)/; fi

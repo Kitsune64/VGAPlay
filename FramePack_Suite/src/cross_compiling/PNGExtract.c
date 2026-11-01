@@ -13,6 +13,11 @@
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>
 
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersrc.h>
+#include <libavfilter/buffersink.h>
+
+
 /* libpng header */
 #include "png.h"
 
@@ -29,6 +34,57 @@
 #define TARGET_HEIGHT 200
 #define VIDEO_TARGET_HEIGHT 160
 
+AVFilterGraph *filter_graph = NULL;
+AVFilterContext *buffersrc_ctx = NULL;
+AVFilterContext *buffersink_ctx = NULL;
+/*
+int init_filters(const char *filter_spec, AVCodecContext *dec_ctx, AVRational time_base) {
+    char args[512];
+    int ret = 0;
+
+    filter_graph = avfilter_graph_alloc();
+    const AVFilter *buffersrc  = avfilter_get_by_name("buffer");
+    const AVFilter *buffersink = avfilter_get_by_name("buffersink");
+    AVFilterInOut *outputs = avfilter_inout_alloc();
+    AVFilterInOut *inputs  = avfilter_inout_alloc();
+
+    if (!filter_graph || !buffersrc || !buffersink) return AVERROR(ENOMEM);
+
+    // Configuration du buffer d'entrée avec les caractéristiques de la vidéo source
+    snprintf(args, sizeof(args),
+             "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d",
+             dec_ctx->width, dec_ctx->height, dec_ctx->pix_fmt,
+             time_base.num, time_base.den,
+             dec_ctx->sample_aspect_ratio.num, dec_ctx->sample_aspect_ratio.den);
+
+    ret = avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in", args, NULL, filter_graph);
+    if (ret < 0) goto end;
+
+    ret = avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out", NULL, NULL, filter_graph);
+    if (ret < 0) goto end;
+
+    // Définition de la chaîne de filtres (ex: "fps=15")
+    outputs->name       = av_strdup("in");
+    outputs->filter_ctx = buffersrc_ctx;
+    outputs->pad_idx    = 0;
+    outputs->next       = NULL;
+
+    inputs->name       = av_strdup("out");
+    inputs->filter_ctx = buffersink_ctx;
+    inputs->pad_idx    = 0;
+    inputs->next       = NULL;
+
+    ret = avfilter_graph_parse_ptr(filter_graph, filter_spec, &inputs, &outputs, NULL);
+    if (ret < 0) goto end;
+
+    ret = avfilter_graph_config(filter_graph, NULL);
+
+end:
+    avfilter_inout_free(&inputs);
+    avfilter_inout_free(&outputs);
+    return ret;
+}
+*/
 /* Mode 1: Fixed height to 160, proportional width, centered on a 320x200 canvas */
 void resize_and_pad(uint8_t *src, int src_w, int src_h, uint8_t *dst, int dst_w, int dst_h) {
     memset(dst, 0, dst_w * dst_h * 3);
@@ -180,9 +236,9 @@ int main(int argc, char *argv[]) {
     }
 
     /* --- Required legacy registration for Windows XP (FFmpeg < 4.0) --- */
-	#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 9, 100)
-		av_register_all();
-	#endif
+    #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 9, 100)
+        av_register_all();
+    #endif
 
     char *input_filename = argv[1];
     char *output_dir = argv[2];
@@ -216,6 +272,7 @@ int main(int argc, char *argv[]) {
     if (avcodec_open2(codec_ctx, codec, NULL) < 0) return 1;
 
     AVFrame *frame = av_frame_alloc();
+    AVFrame *filt_frame = av_frame_alloc();
     AVFrame *frame_rgb = av_frame_alloc();
     
     int w = codec_ctx->width;
@@ -235,48 +292,161 @@ int main(int argc, char *argv[]) {
 
     AVPacket *packet = av_packet_alloc();
     int file_index = 0;
-    
-    double time_base = av_q2d(format_ctx->streams[video_stream_idx]->time_base);
-    double next_sample_time = 0.0;
+    int filter_initialized = 0; // Drapeau pour l'initialisation paresseuse unique
 
-    printf("FFmpeg extraction processing (FPS: %.1f)...\n", target_fps);
+    printf("FFmpeg extraction processing with CFR filter (FPS: %.1f)...\n", target_fps);
 
     while (av_read_frame(format_ctx, packet) >= 0) {
         if (packet->stream_index == video_stream_idx) {
             if (avcodec_send_packet(codec_ctx, packet) >= 0) {
                 while (avcodec_receive_frame(codec_ctx, frame) >= 0) {
-                    double frame_time = frame->pts * time_base;
-                    if (file_index > 0 && frame_time < next_sample_time) {
-                        continue;
+                    
+                    // --- INITIALISATION PARESSEUSE SUR LA 1ère FRAME ---
+                    if (!filter_initialized) {
+                        filter_graph = avfilter_graph_alloc();
+                        const AVFilter *buffersrc  = avfilter_get_by_name("buffer");
+                        const AVFilter *buffersink = avfilter_get_by_name("buffersink");
+                        AVFilterInOut *outputs = avfilter_inout_alloc();
+                        AVFilterInOut *inputs  = avfilter_inout_alloc();
+
+                        if (!filter_graph || !buffersrc || !buffersink || !outputs || !inputs) {
+                            fprintf(stderr, "Failed to allocate filter components\n");
+                            return 1;
+                        }
+
+                        AVRational time_base = format_ctx->streams[video_stream_idx]->time_base;
+                        
+                        // Détermination de la plage de couleur de la frame (tv / pc)
+                        const char *range_str = "unknown";
+                        if (frame->color_range == AVCOL_RANGE_JPEG) range_str = "pc";
+                        else if (frame->color_range == AVCOL_RANGE_MPEG) range_str = "tv";
+
+                        char args[512];
+                        snprintf(args, sizeof(args),
+                                 "video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:range=%s",
+                                 frame->width, frame->height, frame->format,
+                                 time_base.num, time_base.den,
+                                 codec_ctx->sample_aspect_ratio.num, codec_ctx->sample_aspect_ratio.den,
+                                 range_str);
+
+                        if (avfilter_graph_create_filter(&buffersrc_ctx, buffersrc, "in", args, NULL, filter_graph) < 0 ||
+                            avfilter_graph_create_filter(&buffersink_ctx, buffersink, "out", NULL, NULL, filter_graph) < 0) {
+                            fprintf(stderr, "Failed to create filter instances\n");
+                            return 1;
+                        }
+
+                        outputs->name       = av_strdup("in");
+                        outputs->filter_ctx = buffersrc_ctx;
+                        outputs->pad_idx    = 0;
+                        outputs->next       = NULL;
+
+                        inputs->name       = av_strdup("out");
+                        inputs->filter_ctx = buffersink_ctx;
+                        inputs->pad_idx    = 0;
+                        inputs->next       = NULL;
+
+                        char filter_spec[64];
+                        snprintf(filter_spec, sizeof(filter_spec), "fps=fps=%.2f", target_fps);
+
+                        if (avfilter_graph_parse_ptr(filter_graph, filter_spec, &inputs, &outputs, NULL) < 0 ||
+                            avfilter_graph_config(filter_graph, NULL) < 0) {
+                            fprintf(stderr, "Failed to parse or configure filter graph\n");
+                            return 1;
+                        }
+                        avfilter_inout_free(&inputs);
+                        avfilter_inout_free(&outputs);
+                        
+                        filter_initialized = 1;
                     }
-                    next_sample_time = frame_time + (1.0 / target_fps);
-                    
-                    sws_scale(sws_ctx, (uint8_t const * const *)frame->data, frame->linesize, 0, h, frame_rgb->data, frame_rgb->linesize);
-                    
-if (padding_mode == 1) {
-resize_and_pad(raw_pixels, w, h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
-} else {
-resize_image_direct(raw_pixels, w, h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
+                    // --------------------------------------------------
+
+                    // 1. Pousser la frame décodée brute dans le filtre source
+                    if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
+                        fprintf(stderr, "Error while feeding the filtergraph\n");
+                        break;
+                    }
+
+                    // 2. Extraire du filtre les frames rigoureusement cadencées (CFR)
+                    while (1) {
+                        int ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
+                        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+                        if (ret < 0) break;
+
+                        // Traitement de la frame filtrée (CFR strict)
+                        sws_scale(sws_ctx, (uint8_t const * const *)filt_frame->data, filt_frame->linesize, 0, h, frame_rgb->data, frame_rgb->linesize);
+                        
+                        if (padding_mode == 1) {
+                            resize_and_pad(raw_pixels, w, h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
+                        } else {
+                            resize_image_direct(raw_pixels, w, h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
+                        }
+                        
+                        quantize_floyd_steinberg(canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT, max_colors, indexed_pixels, palette, &palette_size);
+                        
+                        char png_name[256];
+                        sprintf(png_name, "%s/G_%06d.PNG", output_dir, file_index);
+                        write_png_indexed(png_name, TARGET_WIDTH, TARGET_HEIGHT, indexed_pixels, palette, palette_size);
+                        
+                        double current_time = (double)(file_index) / target_fps;
+                        printf("\r[Extraction] Frame: %d | Time: %.2fs", file_index, current_time);
+                        fflush(stdout);
+                        
+                        file_index++;
+                        av_frame_unref(filt_frame);
+                    }
+                }
+            }
+        }
+        av_packet_unref(packet);
+    }
+    
+    // --- FLUSH DU FILTRE (Drainage des dernières frames en cache) ---
+    if (buffersrc_ctx) {
+        if (av_buffersrc_add_frame_flags(buffersrc_ctx, NULL, 0) < 0) {
+            fprintf(stderr, "Avertissement : échec de la purge du filtre\n");
+        }
+        while (1) {
+            int ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
+            if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) break;
+            if (ret < 0) break;
+
+            sws_scale(sws_ctx, (uint8_t const * const *)filt_frame->data, filt_frame->linesize, 0, h, frame_rgb->data, frame_rgb->linesize);
+            
+            if (padding_mode == 1) {
+                resize_and_pad(raw_pixels, w, h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
+            } else {
+                resize_image_direct(raw_pixels, w, h, canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT);
+            }
+            
+            quantize_floyd_steinberg(canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT, max_colors, indexed_pixels, palette, &palette_size);
+            
+            char png_name[256];
+            sprintf(png_name, "%s/G_%06d.PNG", output_dir, file_index);
+            write_png_indexed(png_name, TARGET_WIDTH, TARGET_HEIGHT, indexed_pixels, palette, palette_size);
+            
+            double current_time = (double)(file_index) / target_fps;
+            printf("\r[Extraction - Flush] Frame: %d | Time: %.2fs", file_index, current_time);
+            fflush(stdout);
+            
+            file_index++;
+            av_frame_unref(filt_frame);
+        }
+    }
+
+    printf("\nDone! %d image frames generated.\n", file_index);
+    
+    // Nettoyage complet
+    avfilter_graph_free(&filter_graph);
+    free(indexed_pixels); 
+    free(canvas_pixels);
+    av_free(raw_pixels);
+    av_frame_free(&frame_rgb); 
+    av_frame_free(&frame);
+    av_frame_free(&filt_frame);
+    av_packet_free(&packet);
+    sws_freeContext(sws_ctx);
+    avcodec_free_context(&codec_ctx);
+    avformat_close_input(&format_ctx);
+    return 0;
 }
-quantize_floyd_steinberg(canvas_pixels, TARGET_WIDTH, TARGET_HEIGHT, max_colors, indexed_pixels, palette, &palette_size);
-char png_name[256];
-sprintf(png_name, "%s/G_%06d.PNG", output_dir, file_index);
-write_png_indexed(png_name, TARGET_WIDTH, TARGET_HEIGHT, indexed_pixels, palette, palette_size);
-printf("\r[Extraction] Frame: %d | Time: %.2fs", file_index, frame_time);
-fflush(stdout);
-file_index++;
-}
-}
-}
-av_packet_unref(packet);
-}
-printf("\nDone! %d image frames generated.\n", file_index);
-free(indexed_pixels); free(canvas_pixels);
-av_free(raw_pixels);
-av_frame_free(&frame_rgb); av_frame_free(&frame);
-av_packet_free(&packet);
-sws_freeContext(sws_ctx);
-avcodec_free_context(&codec_ctx);
-avformat_close_input(&format_ctx);
-return 0;
-}
+
