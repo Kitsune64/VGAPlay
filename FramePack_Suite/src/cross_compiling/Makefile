@@ -121,9 +121,9 @@ archive:
 	@read -p "Which version do you build? " VERSION; \
 	echo "Creating archives for version $$VERSION..."; \
 	tar -czf $(BASE_DIR)/FramePack_Suite_$${VERSION}_Linux.tar.gz -C $(BASE_DIR)/Linux FramePack_Suite; \
-	cd $(BASE_DIR)/Win32 && 7z a ../FramePack_Suite_$${VERSION}_Win32.7z FramePack_Suite && cd - > /dev/null; \
-	cd $(BASE_DIR)/Win64 && 7z a ../FramePack_Suite_$${VERSION}_Win64.7z FramePack_Suite && cd - > /dev/null; \
-	cd $(BASE_DIR)/WinXP && 7z a ../FramePack_Suite_$${VERSION}_WinXP.7z FramePack_Suite && cd - > /dev/null; \
+	7z a $(CURDIR)/$(BASE_DIR)/FramePack_Suite_$${VERSION}_Win32.7z $(CURDIR)/$(WINDOWS32_DIR); \
+	7z a $(CURDIR)/$(BASE_DIR)/FramePack_Suite_$${VERSION}_Win64.7z $(CURDIR)/$(WINDOWS64_DIR); \
+	7z a $(CURDIR)/$(BASE_DIR)/FramePack_Suite_$${VERSION}_WinXP.7z $(CURDIR)/$(WINDOWSXP_DIR); \
 	echo "All archives successfully created in $(BASE_DIR)/!"
 
 clean:
