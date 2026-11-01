@@ -1,9 +1,9 @@
-========================================================================
-       VGAPLAY & VERIFMOV - USER GUIDE AND LICENSES
-========================================================================
+================================================================================
+       VGAPLAY & VERIFMOV v1.3 - USER GUIDE AND LICENSES
+================================================================================
 
 1. SYSTEM REQUIREMENTS
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 - Compatible Intel 80386 processor (or higher).
 - MS-DOS 5.0+, FreeDOS, or a compatible DOS environment.
 - A DPMI server (DOS Protected Mode Interface). The standard server 
@@ -11,25 +11,27 @@
 
 
 2. PROGRAM USAGE
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 --- VGAPLAY.EXE ---
 Synchronized cinematic player for video and audio streams in standard 
 VGA mode (320x200, 8-bit).
 
 - Usage options:
-  * With argument (Required):
+  * Normal playback mode:
     VGAPLAY.EXE <filename>
     
     (An argument must be provided. You can pass the prefix like "INTRO" 
     or the full video file like "INTRO.BIN". The player automatically 
     associates and loads the corresponding ".WAV" audio file).
 
+  * Index generation mode:
+    VGAPLAY.EXE <filename> -idx
+
+    (Generates the pre-calculated .IDX index file for the video and exits).
+
 - Controls during playback:
-  * [ESC]         : Interrupt and skip the cinematic.
-  * [LEFT SHIFT]  : Enable frame-skipping / turbo mode.
-  * [RIGHT SHIFT] : Enable frame-skipping / turbo mode.
-  * [L-CONTROL]   : Enable frame-skipping / turbo mode.
+  * [ESC] : Interrupt and skip the cinematic.
 
 
 --- VERIFMOV.EXE ---
@@ -41,7 +43,7 @@ of video streams and generate a report (VERIFY.LOG).
 
 
 3. LICENSING AND DISTRIBUTION INFORMATION
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 This package bundles components governed by distinct legal frameworks:
 
@@ -59,13 +61,13 @@ C. External DOS Extender Component (CWSDPMI.EXE - Charles W. Sandmann):
    distribution permissions granted by the author.
 
 
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 APPENDIX: FULL LICENSE TEXTS
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 MIT LICENSE (For VGAPLAY and VERIFMOV)
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Copyright (c) 2026 Kitsune64 on Github.
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -90,9 +92,10 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 URL of the VGAPlay Project page on Github:
 https://github.com/Kitsune64/VGAPlay
 
-------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
 BSD 2-CLAUSE LICENSE (For the embedded LZ4 decompression code)
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Copyright (C) 2011-2017, Yann Collet.
 
 Redistribution and use in source and binary forms, with or without
@@ -118,9 +121,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 DOS EXTENDER LICENSE COMPLIANCE (For CWSDPMI.EXE)
-------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 Copyright (C) 1995-2010 Charles W. Sandmann
 
 This component is licensed under the GNU General Public License v2.
@@ -132,4 +135,3 @@ updates for the CWSDPMI server component.
 You can download the full original source code package (csdpmi7s.zip) 
 from the official FreeDOS mirror repository at URL:
 https://www.ibiblio.org/pub/micro/pc-stuff/freedos/files/util/system/cwsdpmi/
-
