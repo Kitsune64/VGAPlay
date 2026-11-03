@@ -13,7 +13,7 @@ VERIFICATOR_BIN="$SCRIPT_DIR/Verificator"
 PNG_DIR="$SCRIPT_DIR/PNG"
 
 echo "========================================="
-echo "        FramePack Suite Pipeline         "
+echo "        FramePack Suite 1.4 Pipeline     "
 echo "========================================="
 
 # Check that all executables exist and are executable
