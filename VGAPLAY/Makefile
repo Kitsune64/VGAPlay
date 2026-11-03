@@ -9,12 +9,12 @@ IDIR=include
 
 CC=gcc
 CFLAGS=-std=gnu99 -I$(IDIR) -O3 -fomit-frame-pointer -march=i486 -Werror -Wall
-LIBS=-lm -lalleg
+LIBS=-lm
 
 DEPS = $(wildcard $(IDIR)/*.h)
 
-# Cleaned common files
-COMMON_SOURCES = decoder.c fileio.c util.c wav.c lz4.c error.c
+# Cleaned common files - AJOUT DE AUDIO.C ICI
+COMMON_SOURCES = audio.c decoder.c fileio.c util.c wav.c lz4.c error.c
 COMMON_OBJ = $(addprefix $(ODIR)/, $(COMMON_SOURCES:.c=.o))
 
 # Specific objects for each executable
@@ -22,7 +22,7 @@ MAIN_OBJ = $(COMMON_OBJ) $(ODIR)/main.o
 VERIFY_OBJ = $(COMMON_OBJ) $(ODIR)/verify.o
 
 # Default target: README.TXT and documentation files are properly included here
-all: $(BDIR)/$(EXEC_FILE) $(BDIR)/$(VERIFY_FILE) $(BDIR)/CWSDPMI.EXE $(BDIR)/README.TXT $(BDIR)/DOC/COPYING.CWS $(BDIR)/DOC/CSDPMI7B.VER $(BDIR)/DOC/CWSDPMI.DOC $(BDIR)/DOC/CWSPARAM.DOC
+all: $(BDIR)/$(EXEC_FILE) $(BDIR)/$(VERIFY_FILE) $(BDIR)/CWSDPMI.EXE $(BDIR)/README.TXT $(BDIR)/CONFIG.CFG $(BDIR)/DOC/COPYING.CWS $(BDIR)/DOC/CSDPMI7B.VER $(BDIR)/DOC/CWSDPMI.DOC $(BDIR)/DOC/CWSPARAM.DOC
 
 # Generic rule for compiling .o files
 $(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
@@ -43,6 +43,10 @@ $(BDIR)/CWSDPMI.EXE: 3rdparty/BIN/CWSDPMI.EXE
 # Rule for README.TXT
 $(BDIR)/README.TXT: doc/README.TXT
 	copy /Y doc\\README.TXT bin\\README.TXT
+
+# Rule for CONFIG.CFG
+$(BDIR)/CONFIG.CFG: config/CONFIG.CFG
+	copy /Y config\\CONFIG.CFG bin\\CONFIG.CFG
 	
 # DOS rule to create the bin/DOC directory if it does not exist
 $(BDIR)/DOC:
@@ -66,7 +70,8 @@ $(BDIR)/DOC/CWSPARAM.DOC: 3rdparty/DOC/CWSDPMI/CWSPARAM.DOC | $(BDIR)/DOC
 clean:
 	-del obj\\*.o
 	-del bin\\*.EXE
+	-del bin\\*.LOG
+	-del bin\\*.CFG
 	-del bin\\README.TXT
 	-del /F /Q bin\\DOC\\*.*
 	-rmdir /S /Q bin\\DOC
-	
