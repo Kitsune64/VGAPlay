@@ -12,7 +12,7 @@ set "FRAMEPACK_BIN=FramePack.exe"
 set "VERIFICATOR_BIN=Verificator.exe"
 
 echo ===============================================================================
-echo                           FramePack Suite Pipeline
+echo                         FramePack Suite Pipeline 1.4
 echo ===============================================================================
 
 :: Check executables
