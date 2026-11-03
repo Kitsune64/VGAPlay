@@ -13,7 +13,7 @@ LIBS=-lm
 
 DEPS = $(wildcard $(IDIR)/*.h)
 
-# Cleaned common files - AJOUT DE AUDIO.C ICI
+# Cleaned common files
 COMMON_SOURCES = audio.c decoder.c fileio.c util.c wav.c lz4.c error.c
 COMMON_OBJ = $(addprefix $(ODIR)/, $(COMMON_SOURCES:.c=.o))
 
@@ -21,11 +21,21 @@ COMMON_OBJ = $(addprefix $(ODIR)/, $(COMMON_SOURCES:.c=.o))
 MAIN_OBJ = $(COMMON_OBJ) $(ODIR)/main.o
 VERIFY_OBJ = $(COMMON_OBJ) $(ODIR)/verify.o
 
-# Default target: README.TXT and documentation files are properly included here
-all: $(BDIR)/$(EXEC_FILE) $(BDIR)/$(VERIFY_FILE) $(BDIR)/CWSDPMI.EXE $(BDIR)/README.TXT $(BDIR)/CONFIG.CFG $(BDIR)/DOC/COPYING.CWS $(BDIR)/DOC/CSDPMI7B.VER $(BDIR)/DOC/CWSDPMI.DOC $(BDIR)/DOC/CWSPARAM.DOC
+# Default target
+all: $(BDIR) $(BDIR)/DOC $(BDIR)/$(EXEC_FILE) $(BDIR)/$(VERIFY_FILE) $(BDIR)/CWSDPMI.EXE $(BDIR)/README.TXT $(BDIR)/CONFIG.CFG $(BDIR)/DOC/COPYING.CWS $(BDIR)/DOC/CSDPMI7B.VER $(BDIR)/DOC/CWSDPMI.DOC $(BDIR)/DOC/CWSPARAM.DOC
 
-# Generic rule for compiling .o files
-$(ODIR)/%.o: $(SDIR)/%.c $(DEPS)
+# Create directories if needed
+$(BDIR):
+	if not exist bin mkdir bin
+
+$(ODIR):
+	if not exist obj mkdir obj
+
+$(BDIR)/DOC:
+	if not exist bin\\DOC mkdir bin\\DOC
+
+# Generic rule for compiling .o files (ensures obj dir exists)
+$(ODIR)/%.o: $(SDIR)/%.c $(DEPS) | $(ODIR)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 # Compilation of the main game
@@ -47,10 +57,6 @@ $(BDIR)/README.TXT: doc/README.TXT
 # Rule for CONFIG.CFG
 $(BDIR)/CONFIG.CFG: config/CONFIG.CFG
 	copy /Y config\\CONFIG.CFG bin\\CONFIG.CFG
-	
-# DOS rule to create the bin/DOC directory if it does not exist
-$(BDIR)/DOC:
-	if not exist bin\\DOC mkdir bin\\DOC
 
 # Copy rules for DOC files
 $(BDIR)/DOC/COPYING.CWS: 3rdparty/DOC/CWSDPMI/COPYING.CWS | $(BDIR)/DOC
