@@ -1,28 +1,30 @@
 /*
  * FramePack.c
  *
- * Packe toutes les images PNG indexees d'un dossier dans un fichier BIN.
+ * Packs all indexed PNG images of a folder into a BIN file.
+ *
+ * Distributed under the MIT License. See README.TXT for details.
  *
  * Arguments:
  *   FramePack <DIRECTORY> <PREFIX> <FPS> <MAX_COLORS>
  *
- * Exemple:
+ * Example:
  *   FramePack ./PNG video 15 256
  *
- * Le format BIN actuel est conserve:
- *   - uint16 little-endian : nombre d'images
+ * The current BIN format is preserved:
+ *   - uint16 little-endian : number of frames
  *   - uint8                : FPS
  *   - uint8                : padding
- *   - une table de tailles LZ4 int32 little-endian
- *   - pour chaque image :
- *       768 octets de palette RGB
- *       bloc LZ4 des 64000 indices
+ *   - an array of LZ4 sizes (int32 little-endian)
+ *   - for each image :
+ *       768 bytes of RGB palette
+ *       LZ4 block of the 64000 indices
  *
- * Deux passages:
- *   1. Inventaire, tri, SHA-256, validation et analyse des palettes.
- *   2. Nouvelle enumeration/verifications, puis creation du BIN.
+ * Two passes:
+ *   1. Inventory, sorting, SHA-256, validation, and palette analysis.
+ *   2. New enumeration/verifications, then BIN creation.
  *
- * Aucune quantification, conversion RGB ou remappage des indices.
+ * No quantification, RGB conversion, or index remapping.
  */
 
 #define _POSIX_C_SOURCE 200809L
@@ -743,7 +745,12 @@ int main(int argc, char **argv)
 
     long frame;
     int success = 0;
-
+    
+    if (argc >= 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+		printf("FramePack version 1.4\n");
+		return 0;
+	}
+    
     if (argc != 5) {
         usage(argv[0]);
         return 2;

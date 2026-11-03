@@ -65,7 +65,7 @@ linux: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(LINUX_D
 	$(CC) $(CFLAGS) $(LINUX_FFMPEG_CFLAGS) PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_LINUX) $(LINUX_FFMPEG_LDFLAGS) -lm
 	$(CC) $(CFLAGS) $(LINUX_FFMPEG_CFLAGS) mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_LINUX) $(LINUX_FFMPEG_LDFLAGS) -lm
 	@if [ -f "script/Linux/$(SCRIPT_NAME)" ]; then cp "script/Linux/$(SCRIPT_NAME)" "$(LINUX_DIR)/" && chmod +x "$(LINUX_DIR)/$(SCRIPT_NAME)"; fi
-	@if [ -f "doc/ReadMe.txt" ]; then cp "doc/ReadMe.txt" "$(LINUX_DIR)/"; fi
+	@if [ -f "doc/README.TXT" ]; then cp "doc/README.TXT" "$(LINUX_DIR)/README.TXT"; fi
 	@if [ -f "samples/demo.mp4" ]; then cp "samples/demo.mp4" "$(LINUX_DIR)/"; fi
 	@if [ -f "LICENSE" ]; then cp "LICENSE" "$(LINUX_DIR)/"; fi
 
@@ -74,7 +74,7 @@ windows32: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WIN
 	$(CROSS_CC_32) $(CFLAGS) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WIN32) $(STATIC_GCC_FLAGS) -lm
 	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -mthreads -I$(WIN32_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavfilter -lavformat -lavcodec -lswscale -lavutil -lm
 	$(CROSS_CC_32) $(CFLAGS) $(STATIC_GCC_FLAGS) -mthreads -I$(WIN32_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WIN32) -L$(WIN32_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
-	@if [ -f "doc/ReadMe.txt" ]; then cp "doc/ReadMe.txt" "$(WINDOWS32_DIR)/"; fi
+	@if [ -f "doc/README.TXT" ]; then cp "doc/README.TXT" "$(WINDOWS32_DIR)/README.TXT"; fi
 	@if [ -d "$(WIN32_FFMPEG_DIR)/bin" ]; then cp $(WIN32_FFMPEG_DIR)/bin/*.dll $(WINDOWS32_DIR)/; fi
 	@if [ -f "deps/WinXP/libgcc_s_dw2-1.dll" ]; then cp "deps/WinXP/libgcc_s_dw2-1.dll" "$(WINDOWS32_DIR)/"; fi
 	@if [ -f "script/WinXP/convert.bat" ]; then cp "script/WinXP/convert.bat" "$(WINDOWS32_DIR)/"; fi
@@ -90,7 +90,7 @@ windows64: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WIN
 	$(CROSS_CC_64) $(CFLAGS) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WIN64) $(STATIC_GCC_FLAGS) -lm
 	$(CROSS_CC_64) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN64_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WIN64) -L$(WIN64_FFMPEG_DIR)/lib -lavfilter -lavformat -lavcodec -lswscale -lavutil -lm
 	$(CROSS_CC_64) $(CFLAGS) $(STATIC_GCC_FLAGS) -I$(WIN64_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WIN64) -L$(WIN64_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
-	@if [ -f "doc/ReadMe.txt" ]; then cp "doc/ReadMe.txt" "$(WINDOWS64_DIR)/"; fi
+	@if [ -f "doc/README.TXT" ]; then cp "doc/README.TXT" "$(WINDOWS64_DIR)/README.TXT"; fi
 	@if [ -d "$(WIN64_FFMPEG_DIR)/bin" ]; then cp $(WIN64_FFMPEG_DIR)/bin/*.dll $(WINDOWS64_DIR)/; fi
 	@if [ -f "script/WinXP/convert.bat" ]; then cp "script/WinXP/convert.bat" "$(WINDOWS64_DIR)/"; fi
 	@if [ -f "samples/demo.mp4" ]; then cp "samples/demo.mp4" "$(WINDOWS64_DIR)/"; fi
@@ -106,7 +106,7 @@ windowsxp: FramePack.c verificator.c PNGExtract.c mpg2wav.c $(SRCS_LIBS) | $(WIN
 	$(CROSS_CC_32) $(CFLAGS_XP32) verificator.c $(SRCS_LIBS) -o $(EXE_VERIF_WINXP) $(STATIC_GCC_FLAGS) -lm
 	$(CROSS_CC_32) $(CFLAGS_XP32) $(STATIC_GCC_FLAGS) -mthreads -I$(WINXP_FFMPEG_DIR)/include PNGExtract.c $(SRCS_LIBS) -o $(EXE_EXTRACT_WINXP) -L$(WINXP_FFMPEG_DIR)/lib -lavfilter -lavformat -lavcodec -lswscale -lavutil -lm
 	$(CROSS_CC_32) $(CFLAGS_XP32) $(STATIC_GCC_FLAGS) -mthreads -I$(WINXP_FFMPEG_DIR)/include mpg2wav.c $(SRCS_LIBS) -o $(EXE_MPG2WAV_WINXP) -L$(WINXP_FFMPEG_DIR)/lib -lavformat -lavcodec -lswresample -lavutil -lm
-	@if [ -f "doc/ReadMe.txt" ]; then cp "doc/ReadMe.txt" "$(WINDOWSXP_DIR)/"; fi
+	@if [ -f "doc/README.TXT" ]; then cp "doc/README.TXT" "$(WINDOWSXP_DIR)/README.TXT"; fi
 	@if [ -d "$(WINXP_FFMPEG_DIR)/bin" ]; then cp $(WINXP_FFMPEG_DIR)/bin/*.dll $(WINDOWSXP_DIR)/; fi
 	@if [ -f "deps/WinXP/libgcc_s_dw2-1.dll" ]; then cp "deps/WinXP/libgcc_s_dw2-1.dll" "$(WINDOWSXP_DIR)/"; fi
 	@if [ -f "script/WinXP/convert.bat" ]; then cp "script/WinXP/convert.bat" "$(WINDOWSXP_DIR)/"; fi

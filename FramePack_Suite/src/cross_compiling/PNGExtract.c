@@ -183,10 +183,18 @@ int write_png_indexed(const char *path, int width, int height, uint8_t *indexed_
 }
 
 int main(int argc, char *argv[]) {
+	
+	if (argc >= 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+		printf("PNGExtract version 1.4\n");
+		return 0;
+	}
+	
     if (argc < 6) {
         printf("Usage: PNGExtract <file.mp4> <output_dir> <fps> <max_colors> <padding_mode (0/1)>\n");
         return 1;
     }
+    
+
 
     /* --- Required legacy registration for Windows XP (FFmpeg < 4.0) --- */
     #if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(58, 9, 100)

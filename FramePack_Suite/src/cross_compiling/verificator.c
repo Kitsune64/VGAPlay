@@ -1,3 +1,7 @@
+/*
+  verificator.c - Check the Video BIN file generate by FramePack.
+  License: MIT
+*/
 #define _POSIX_C_SOURCE 200809L
 #include <png.h>
 #include "include/lz4.h"
@@ -29,6 +33,10 @@ static int save_png(const char *filename, const uint8_t *indices, const RGBColor
 }
 
 int main(int argc, char **argv) {
+	if (argc >= 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+		printf("mpg2wav version 1.4\n");
+		return 0;
+	}
     if (argc < 2 || argc > 4) {
         fprintf(stderr, "Usage Mode 1 (Analysis) : %s <video.bin>\n", argv[0]);
         fprintf(stderr, "Usage Mode 2 (Extract)  : %s <video.bin> <frame_index> <output.png>\n", argv[0]);

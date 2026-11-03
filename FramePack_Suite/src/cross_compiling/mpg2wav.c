@@ -1,21 +1,21 @@
 /*
- * mpg2wav - Extracteur audio FFmpeg vers WAV Sound Blaster 16
+ * mpg2wav - FFmpeg to Sound Blaster 16 WAV audio extractor
  *
- * Sortie :
+ * Output:
  *   RIFF/WAVE
- *   PCM non compresse
+ *   Uncompressed PCM
  *   44100 Hz
  *   Stereo
- *   16 bits signes
+ *   16-bit signed
  *   Little-endian
  *
- * Compatibilite :
- *   - Windows XP 32 bits / FFmpeg 3.4
- *   - Windows moderne Win32
- *   - Windows moderne Win64
+ * Compatibility:
+ *   - Windows XP 32-bit / FFmpeg 3.4
+ *   - Modern Windows Win32
+ *   - Modern Windows Win64
  *   - Linux Debian 13 / FFmpeg 7
  *
- * Licence : MIT
+ * License: MIT
  */
 
 #include <stdio.h>
@@ -361,7 +361,10 @@ int main(int argc, char *argv[])
     uint64_t data_bytes_written = 0;
 
     int header_written = 0;
-
+    if (argc >= 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+		printf("mpg2wav version 1.4\n");
+		return 0;
+	}
     if (argc < 3) {
         printf("Usage: mpg2wav <file.mp4> <PREFIX>\n");
         printf("Example: mpg2wav MONFILM.MP4 MONFILM\n");
