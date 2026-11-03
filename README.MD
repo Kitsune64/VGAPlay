@@ -1,8 +1,8 @@
-# VGAPlay (v1.4)
+# VGAPlay
 
 **VGAPlay** is a real-time synchronized video and audio playback ecosystem engineered for legacy x86 PC architectures running MS-DOS, FreeDOS, or DOSBox emulation.
 
-Developed as an extensive modern architectural fork of [*DOSVideoPlayer* by Netdex](https://github.com/Netdex/DOSVideoPlayer) (2017), VGAPlay bridges modern video formats with authentic retro hardware. It features a lightweight, zero-external-dependency DOS C player engine, alongside a robust cross-platform conversion suite (**FramePack Suite v1.4**).
+Developed as an extensive modern architectural fork of [*DOSVideoPlayer* by Netdex](https://github.com/Netdex/DOSVideoPlayer) (2017), VGAPlay bridges modern video formats with authentic retro hardware. It features a lightweight, zero-external-dependency DOS C player engine, alongside a robust cross-platform conversion suite (**FramePack Suite**).
 
 ---
 
