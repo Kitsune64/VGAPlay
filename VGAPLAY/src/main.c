@@ -1,29 +1,31 @@
 /*
- * main.c from VGAPLAY by Kitsune64 on Github. 
- * URL: https://github.com/Kitsune64/VGAPlay
+ * main.c from VGAPLAY by Kitsune64 on Github.
+ * URL: https://github.com
  * VGAPLAY is a VGA Player in VGA Mode 13H for DOS Operating System
- * 
+ *
  * Distributed under the MIT License. See README.TXT for details.
+ *
+ * Version sans Allegro : clavier via conio, ecran via int 10h / dosmemput.
  */
 #include <stdio.h>
-#include <math.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 #include <unistd.h>
+#include <conio.h>
 #include <pc.h>
 #include <dpmi.h>
-#include <sys/nearptr.h>
+#include <sys/movedata.h>
 #include <time.h>
-#include <string.h>
-#include <allegro.h>
-
 /* DOSVideoPlayer decoder headers */
 #include "types.h"
 #include "util.h"
 #include "decoder.h"
 #include "wav.h"
+#include "audio.h"
 
 #define VIDEO_BUF_SZ        1
 
-/* Global video player variables */
 byte skip = 0;
 long long shift = 0;
 
@@ -31,112 +33,191 @@ byte video_data[320 * 200 * VIDEO_BUF_SZ];
 byte palette_data[768 * VIDEO_BUF_SZ];
 int palette_sizes[VIDEO_BUF_SZ];
 
-/* Switch to Mode 13h (320x200, 256 colors) using BIOS interrupt via DPMI */
-void set_mode_13h() {
+static void set_mode_13h(void) {
     __dpmi_regs r;
-    r.h.ah = 0x00; // BIOS function: Set video mode
-    r.h.al = 0x13; // Mode 13h (320x200, 256 colors)
-    __dpmi_int(0x10, &r);
-}
-
-/* Return to standard text mode */
-void set_text_mode() {
-    __dpmi_regs r;
+    memset(&r, 0, sizeof(r));
     r.h.ah = 0x00;
-    r.h.al = 0x03; // Standard text mode 80x25
+    r.h.al = 0x13;
     __dpmi_int(0x10, &r);
 }
 
-/* Send palette data directly to VGA DAC ports */
-void set_vga_palette(const byte *raw_pal) {
-    outportb(0x3C8, 0); // Start at color index 0
-    for (int i = 0; i < 256 * 3; i++) {
-        // Native VGA palette expects values from 0 to 63 (hence shifting right by 2)
+static void set_text_mode(void) {
+    __dpmi_regs r;
+    memset(&r, 0, sizeof(r));
+    r.h.ah = 0x00;
+    r.h.al = 0x03;
+    __dpmi_int(0x10, &r);
+}
+
+static void set_vga_palette(const byte *raw_pal) {
+    int i;
+    outportb(0x3C8, 0);
+    for (i = 0; i < 256 * 3; i++) {
         outportb(0x3C9, raw_pal[i] >> 2);
     }
 }
 
-/* =========================================================================
-   EXPLICITLY GENERATE AND SAVE THE .IDX FILE
-   ========================================================================= */
+static int file_ok(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (f) { fclose(f); return 1; }
+    return 0;
+}
+
 int generate_index_file(const char *base_filename) {
     char video_filename[128];
     char audio_filename[128];
     char idx_filename[128];
+    int32_t frame_count_i32, total_samples_i32;
 
     sprintf(video_filename, "%s.BIN", base_filename);
     sprintf(audio_filename, "%s.WAV", base_filename);
     sprintf(idx_filename, "%s.IDX", base_filename);
 
-    /* Open video file to read header */
     FILE *video_file = fopen(video_filename, "rb");
     if (!video_file) {
         printf("Error: Could not open video file %s\n", video_filename);
         return 0;
     }
+
     struct video_header vh = decode_video_header(video_file);
     fclose(video_file);
+    decode_video_free();
 
-    /* Open audio file to get sample length */
-    SAMPLE *sound_track = load_wav(audio_filename);
-    if (!sound_track) {
+    if (vh.frame_count == 0) {
+        printf("Error: Invalid video frame count (%d)\n", (int)vh.frame_count);
+        return 0;
+    }
+
+    FILE *audio_file = fopen(audio_filename, "rb");
+    if (!audio_file) {
         printf("Error: Could not open audio file %s\n", audio_filename);
         return 0;
     }
 
-    /* Allocate memory for the index table */
-    uint32_t *index_table = (uint32_t *)malloc(vh.frame_count * sizeof(uint32_t));
+    unsigned short channels = 1, bits_per_sample = 16;
+    unsigned int data_size = 0;
+    char chunk[4];
+    unsigned int chunk_size = 0;
+
+    /* Analyse RIFF/WAV */
+    if (fread(chunk, 1, 4, audio_file) == 4 && memcmp(chunk, "RIFF", 4) == 0) {
+        fseek(audio_file, 4, SEEK_CUR);
+        if (fread(chunk, 1, 4, audio_file) == 4 && memcmp(chunk, "WAVE", 4) == 0) {
+            while (fread(chunk, 1, 4, audio_file) == 4) {
+                if (fread(&chunk_size, 4, 1, audio_file) != 1) break;
+                if (memcmp(chunk, "fmt ", 4) == 0) {
+                    unsigned short audio_format;
+                    fread(&audio_format, 2, 1, audio_file);
+                    fread(&channels, 2, 1, audio_file);
+                    fseek(audio_file, 4, SEEK_CUR); /* SampleRate */
+                    fseek(audio_file, 6, SEEK_CUR); /* ByteRate & BlockAlign */
+                    fread(&bits_per_sample, 2, 1, audio_file);
+                    if (chunk_size > 16) fseek(audio_file, chunk_size - 16 + (chunk_size & 1), SEEK_CUR);
+                } else if (memcmp(chunk, "data", 4) == 0) {
+                    data_size = chunk_size;
+                    break;
+                } else {
+                    fseek(audio_file, chunk_size + (chunk_size & 1), SEEK_CUR);
+                }
+            }
+        }
+    }
+
+    /* Meme regle que audio.c : ne pas depasser la taille reelle du fichier */
+    if (data_size != 0) {
+        long pos = ftell(audio_file);
+        long end;
+        fseek(audio_file, 0, SEEK_END);
+        end = ftell(audio_file);
+        if (end > pos && data_size > (unsigned int)(end - pos)) data_size = (unsigned int)(end - pos);
+    }
+    fclose(audio_file);
+
+    if (data_size == 0) {
+        printf("Error: Audio data chunk not found or empty.\n");
+        return 0;
+    }
+
+    unsigned int bytes_per_sample_frame = channels * (bits_per_sample / 8);
+    if (bytes_per_sample_frame == 0) bytes_per_sample_frame = 2;
+    unsigned int total_samples = data_size / bytes_per_sample_frame;
+
+    uint32_t *index_table = (uint32_t *)malloc((size_t)vh.frame_count * sizeof(uint32_t));
     if (!index_table) {
-        destroy_sample(sound_track);
         printf("Error: Out of memory for index table!\n");
         return 0;
     }
 
-    /* Populate index table with proportional timing */
-    for (int i = 0; i < vh.frame_count; i++) {
-        index_table[i] = (uint32_t)(((double)i * sound_track->len) / vh.frame_count);
+    /* Remplissage progressif et croissant de la table */
+    for (int i = 0; i < (int)vh.frame_count; i++) {
+        index_table[i] = (uint32_t)(((double)i * (double)total_samples) / (double)vh.frame_count);
     }
 
-    /* Write index file to disk */
     FILE *f = fopen(idx_filename, "wb");
     if (!f) {
         free(index_table);
-        destroy_sample(sound_track);
-        printf("Error: Could not create index file %s (check write permissions)\n", idx_filename);
+        printf("Error: Could not create index file %s\n", idx_filename);
         return 0;
     }
 
+    /* Ecriture en int32 explicite (frame_count est un mot de 16 bits) */
+    frame_count_i32 = (int32_t)vh.frame_count;
+    total_samples_i32 = (int32_t)total_samples;
     fwrite("IDX1", 1, 4, f);
-    fwrite(&vh.frame_count, sizeof(int), 1, f);
-    fwrite(&sound_track->len, sizeof(int), 1, f);
+    fwrite(&frame_count_i32, 4, 1, f);
+    fwrite(&total_samples_i32, 4, 1, f);
     fwrite(index_table, sizeof(uint32_t), vh.frame_count, f);
     fclose(f);
 
-    /* Cleanup */
     free(index_table);
-    destroy_sample(sound_track);
-
-    printf("Success: Index file '%s' generated successfully!\n", idx_filename);
+    printf("[IDX] Index successfully generated (%d frames, %u samples).\n", (int)vh.frame_count, total_samples);
     return 1;
 }
 
-/* =========================================================================
-   PLAY SYNCHRONIZED LZ4 CINEMATIC USING THE .IDX FILE IN RAM
-   ========================================================================= */
 int play_lz4_cinematic(const char *video_path, const char *audio_path) {
-    FILE* video_file = fopen(video_path, "rb");
+	
+	int frame = 0;
+	int skipped = 0;
+	int target_frame = 0;
+
+	int raw_sample;
+	int current_sample;
+
+	uclock_t debug_last = 0;
+	uclock_t debug_now;
+
+	unsigned long next_index;
+	FILE *log;
+	log = fopen("SYNC.LOG", "w");
+
+	if (log) {
+		fprintf(log, "Debut de play_lz4_cinematic\n");
+		fflush(log);
+	} else {
+		printf("Impossible de creer SYNC.LOG\n");
+	}
+		
+    FILE *video_file = fopen(video_path, "rb");
+    
     if (!video_file) return 0;
 
     struct video_header vh = decode_video_header(video_file);
     decode_video_reset();
 
-    SAMPLE *sound_track = load_wav(audio_path);
-    if (!sound_track) {
+    int frame_count = (int)vh.frame_count;
+    if (frame_count <= 0) {
         fclose(video_file);
+        decode_video_free();
         return 0;
     }
 
-    /* Extract base filename for the .IDX file */
+    unsigned int total_samples = 0;
+    if (!audio_load_wav(audio_path, &total_samples)) {
+        fclose(video_file);
+        decode_video_free();
+        return 0;
+    }
+
     char base_name[128];
     strcpy(base_name, video_path);
     char *ext = strrchr(base_name, '.');
@@ -145,195 +226,196 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
     char idx_filename[128];
     sprintf(idx_filename, "%s.IDX", base_name);
 
-/* Allocate memory for the index table */
-    uint32_t *frame_index = (uint32_t *)malloc(vh.frame_count * sizeof(uint32_t));
+    uint32_t *frame_index = (uint32_t *)malloc((size_t)frame_count * sizeof(uint32_t));
     if (!frame_index) {
-        destroy_sample(sound_track);
+        audio_stop();
         fclose(video_file);
+        decode_video_free();
         return 0;
     }
 
-    /* Load the pre-calculated .IDX file from disk into RAM with integrity check */
     int index_loaded = 0;
     FILE *f_idx = fopen(idx_filename, "rb");
     if (f_idx) {
-        char magic[4];
-        int f_count, f_samples;
-        
-        fread(magic, 1, 4, f_idx);
-        fread(&f_count, sizeof(int), 1, f_idx);
-        fread(&f_samples, sizeof(int), 1, f_idx);
+        char magic[4] = {0};
+        int32_t f_count = 0, f_samples = 0;
 
-        /* Verify integrity to prevent corrupted index data */
-        if (memcmp(magic, "IDX1", 4) == 0 && f_count == vh.frame_count && f_samples == sound_track->len) {
-            fread(frame_index, sizeof(uint32_t), vh.frame_count, f_idx);
+        if (fread(magic, 1, 4, f_idx) == 4 &&
+            fread(&f_count, 4, 1, f_idx) == 1 &&
+            fread(&f_samples, 4, 1, f_idx) == 1 &&
+            memcmp(magic, "IDX1", 4) == 0 &&
+            f_count == frame_count &&
+            (unsigned int)f_samples == total_samples &&
+            fread(frame_index, sizeof(uint32_t), (size_t)frame_count, f_idx) == (size_t)frame_count) {
             index_loaded = 1;
         }
         fclose(f_idx);
     }
 
-    /* Fallback if .IDX is missing or invalid: generate it on the fly in RAM */
     if (!index_loaded) {
-        for (int i = 0; i < vh.frame_count; i++) {
-            frame_index[i] = (uint32_t)(((double)i * sound_track->len) / vh.frame_count);
+        for (int i = 0; i < frame_count; i++) {
+            frame_index[i] = (uint32_t)(((double)i * (double)total_samples) / (double)frame_count);
         }
     }
 
-    set_mode_13h();
+    printf("[DEBUG] Avant set_mode_13h\n"); fflush(stdout);
+	set_mode_13h();
+	printf("[DEBUG] Avant audio_play\n"); fflush(stdout);
+	audio_play();
+	printf("[DEBUG] Audio démarré avec succès\n"); fflush(stdout);
 
-    int audio_voice = play_sample(sound_track, 255, 128, 1000, 0);
-
-    int frame = 0;
-    int skipped = 0;
-    int target_frame = 0; // <--- Déclaré ici, en dehors de la boucle, pour garder sa valeur
-    
-    while (frame < vh.frame_count) {
-        if (key[KEY_ESC]) {
+    while (frame < frame_count) {
+        /* ESC pour quitter */
+        if (kbhit() && getch() == 27) {
             skipped = 1;
             break;
         }
 
-        /* SUPPRIMER "int target_frame = frame;" D'ICI */
+        //Test
+        //audio_update();
+		//int current_sample = (int)frame_index[frame];
+		
+		audio_update();
 
-        /* DIRECT SYNCHRONIZATION VIA RAM INDEX TABLE LOOKUP */
-        if (audio_voice >= 0) {
-            int current_sample = voice_get_position(audio_voice);
-            
-            if (current_sample < 0) {
-                break; /* Audio finished, let video finish remaining frames */
-            }
+		raw_sample = audio_get_position();
+		current_sample = raw_sample;
+		
+		usleep(1000);
+		
+		debug_now = uclock();
 
-            /* Find target frame efficiently using the pre-calculated index table */
-            while (target_frame < vh.frame_count - 1 && frame_index[target_frame + 1] <= (uint32_t)current_sample) {
-                target_frame++;
-            }
-            /* Recede target frame if audio position is behind */
-            while (target_frame > 0 && frame_index[target_frame] > (uint32_t)current_sample) {
-                target_frame--;
-            }
+		if (debug_last == 0)
+			debug_last = debug_now;
+
+		if (debug_now - debug_last >= UCLOCKS_PER_SEC) {
+
+			if (log) {
+				next_index = 0;
+
+				if (frame + 1 < frame_count)
+					next_index = (unsigned long)frame_index[frame + 1];
+
+				fprintf(log,
+					"time=%lu frame=%d target=%d sample=%d next_index=%lu\n",
+					(unsigned long)debug_now,
+					frame,
+					target_frame,
+					raw_sample,
+					next_index);
+
+				fflush(log);
+			}
+
+			debug_last = debug_now;
+		}
+		
+		
+        /* Piste audio terminee : on affiche directement la fin de la video */
+        if (current_sample < 0) current_sample = 0x7FFFFFFF;
+
+        while (target_frame < frame_count - 1 && frame_index[target_frame + 1] <= (uint32_t)current_sample) {
+            target_frame++;
+        }
+        while (target_frame > 0 && frame_index[target_frame] > (uint32_t)current_sample) {
+            target_frame--;
         }
 
-        /* 1. IF VIDEO IS AHEAD : Wait briefly during VBLANK */
         if (frame > target_frame) {
-            rest(1); 
+            usleep(1000);
             continue;
         }
 
-        /* 2. IF VIDEO IS BEHIND : Catch up without lagging */
-        while (frame < target_frame && frame < vh.frame_count) {
+        /* Images en retard : decodees sans affichage (flux LZ4 continu) */
+        while (frame < target_frame && frame < frame_count) {
             decode_video_frame(video_file, frame, palette_data, palette_sizes, video_data);
             frame++;
         }
 
-        if (frame >= vh.frame_count) break;
+        if (frame >= frame_count) break;
 
         decode_video_frame(video_file, frame, palette_data, palette_sizes, video_data);
 
-        /* 3. WAIT FOR VERTICAL RETRACE (Anti-tearing) */
-        while (inportb(0x3DA) & 0x08);
-        while (!(inportb(0x3DA) & 0x08));
+        /* Attente du debut du retrace vertical */
+       // while (inportb(0x3DA) & 0x08);
+       // while (!(inportb(0x3DA) & 0x08));
 
-        /* 4. UPDATE PALETTE DURING VBLANK */
-        set_vga_palette(palette_data);
+       // set_vga_palette(palette_data);
 
-        /* 5. ULTRA-FAST ASSEMBLY TRANSFER (rep movsl) */
-        uint32_t *src_ptr = (uint32_t *)video_data;
-        uint32_t *dest_ptr = (uint32_t *)((uintptr_t)__djgpp_conventional_base + 0xA0000);
-        unsigned long count = (320 * 200) / 4;
+        /* Copie vers la memoire video (pas besoin de nearptr) */
+        //dosmemput(video_data, 320 * 200, 0xA0000);
+        
+        /* Attendre le debut du retrace vertical */
+		while (inportb(0x3DA) & 0x08);
+		while (!(inportb(0x3DA) & 0x08));
 
-        asm volatile (
-            "cld\n\t"
-            "rep movsl"
-            : "+S" (src_ptr), "+c" (count)
-            : "D" (dest_ptr)
-            : "memory"
-        );
+		set_vga_palette(palette_data);
+		dosmemput(video_data, 320 * 200, 0xA0000);
 
         frame++;
     }
 
-    /* Cleanup resources */
     free(frame_index);
-    stop_sample(sound_track);
-    destroy_sample(sound_track);
+    audio_stop();
     fclose(video_file);
     decode_video_free();
 
+    while (kbhit()) getch();   /* vide le buffer clavier */
+
     set_text_mode();
+    
+    if (log) {
+		fprintf(log, "Fin de lecture\n");
+		fclose(log);
+	}
+    
     return skipped;
 }
 
-/* =========================================================================
-   ENGINE MAIN ENTRY POINT
-   ========================================================================= */
 int main(int argc, char *argv[]) {
-
-    /* Check if at least one argument is provided */
     if (argc < 2) {
         printf("Usage: VGAPLAY.EXE <filename> [options]\n");
-        printf("Options:\n");
-        printf("  -idx         Generate the .idx index file for the video and exit\n");
-        printf("Example: VGAPLAY INTRO\n");
-        printf("         VGAPLAY INTRO -idx\n");
         return 1;
     }
 
-    /* Extract base filename */
     char base_name[100];
-    strcpy(base_name, argv[1]);
+    strncpy(base_name, argv[1], sizeof(base_name) - 1);
+    base_name[sizeof(base_name) - 1] = '\0';
     char *ext = strrchr(base_name, '.');
-    if (ext != NULL) {
-        *ext = '\0';
-    }
+    if (ext != NULL) *ext = '\0';
 
-    /* Check if user requested index generation via '-idx' parameter */
     if (argc >= 3 && strcmp(argv[2], "-idx") == 0) {
         return generate_index_file(base_name) ? 0 : 1;
     }
 
-    /* --- NORMAL PLAYBACK MODE --- */
-    if (allegro_init() != 0) {
-        printf("Allegro initialization failed!\n");
-        return 1;
+    /* --- INITIALISATION ET AFFICHAGE DU MATERIEL AUDIO --- */
+    audio_init();
+    if (audio_driver == AUDIO_AC97) {
+        printf("[AUDIO] Carte son detectee : AC'97 (Natif PCI)\n");
+    } else if (audio_driver == AUDIO_SB) {
+        printf("[AUDIO] Carte son detectee : Sound Blaster 16\n");
+    } else {
+        printf("[AUDIO] Avertissement : Aucune carte son detectee (Mode muet)\n");
     }
-
-    install_keyboard();
-    install_timer();
-
-    if (install_sound(DIGI_AUTODETECT, MIDI_AUTODETECT, NULL) != 0) {
-        printf("Warning: Sound system (WAV/MIDI) not available!\n");
-    }
-
-    set_color_depth(8);
-
-    if (!__djgpp_nearptr_enable()) {
-        printf("Erreur : Impossible d'activer le mode nearptr !\n");
-        return 1;
-    }
+    //usleep(1500000); /* Pause de 1.5 seconde pour lire le message */
 
     char video_filename[128];
     char audio_filename[128];
     sprintf(video_filename, "%s.BIN", base_name);
     sprintf(audio_filename, "%s.WAV", base_name);
 
-    /* Play cinematic */
-    if (exists(video_filename) && exists(audio_filename)) {
+    if (file_ok(video_filename) && file_ok(audio_filename)) {
+		printf("[TRACE] Lancement de la cinematique...\n"); fflush(stdout); // Ligne témoin
         play_lz4_cinematic(video_filename, audio_filename);
     } else {
-        __djgpp_nearptr_disable();
-        set_text_mode();
         printf("Error: Video file (%s) or audio file (%s) not found!\n", video_filename, audio_filename);
-        return 1; 
+        return 1;
     }
 
     set_text_mode();
-    __djgpp_nearptr_disable();
 
     printf("CINEMATIC STREAMING PASSED OK\n");
     printf("Press any key to exit...\n");
-    readkey();
+    getch();
 
     return 0;
 }
-END_OF_MAIN()
-
