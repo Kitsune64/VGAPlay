@@ -1,11 +1,11 @@
 /*
- * main.c from VGAPLAY by Kitsune64 on Github.
- * URL: https://github.com
+ * main.c from VGAPLAY 1.4 by Kitsune64 on Github.
+ * URL: https://github.com/Kitsune64/VGAPlay
+ * 
  * VGAPLAY is a VGA Player in VGA Mode 13H for DOS Operating System
  *
  * Distributed under the MIT License. See README.TXT for details.
  *
- * Version sans Allegro : clavier via conio, ecran via int 10h / dosmemput.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,7 +17,7 @@
 #include <dpmi.h>
 #include <sys/movedata.h>
 #include <time.h>
-/* DOSVideoPlayer decoder headers */
+
 #include "types.h"
 #include "util.h"
 #include "decoder.h"
@@ -32,6 +32,28 @@ long long shift = 0;
 byte video_data[320 * 200 * VIDEO_BUF_SZ];
 byte palette_data[768 * VIDEO_BUF_SZ];
 int palette_sizes[VIDEO_BUF_SZ];
+
+/* Ouvre le fichier de log si l'option est activée */
+static FILE* open_sync_log(int enable_log) {
+    if (!enable_log) return NULL;
+    
+    FILE *log = fopen("SYNC.LOG", "w");
+    if (log) {
+        fprintf(log, "Debut de play_lz4_cinematic\n");
+        fflush(log);
+    } else {
+        printf("Impossible de creer SYNC.LOG\n");
+    }
+    return log;
+}
+
+/* Ferme proprement le fichier de log s'il est actif */
+static void close_sync_log(FILE *log) {
+    if (log) {
+        fprintf(log, "Fin de lecture\n");
+        fclose(log);
+    }
+}
 
 static void set_mode_13h(void) {
     __dpmi_regs r;
@@ -174,32 +196,24 @@ int generate_index_file(const char *base_filename) {
     return 1;
 }
 
-int play_lz4_cinematic(const char *video_path, const char *audio_path) {
-	
+int play_lz4_cinematic(const char *video_path, const char *audio_path, int enable_log) {
 	int frame = 0;
 	int skipped = 0;
 	int target_frame = 0;
-
 	int raw_sample;
 	int current_sample;
-
 	uclock_t debug_last = 0;
 	uclock_t debug_now;
-
 	unsigned long next_index;
-	FILE *log;
-	log = fopen("SYNC.LOG", "w");
 
-	if (log) {
-		fprintf(log, "Debut de play_lz4_cinematic\n");
-		fflush(log);
-	} else {
-		printf("Impossible de creer SYNC.LOG\n");
-	}
+    /* Utilisation de la fonction dédiée pour l'ouverture */
+    FILE *log = open_sync_log(enable_log);
 		
     FILE *video_file = fopen(video_path, "rb");
-    
-    if (!video_file) return 0;
+    if (!video_file) {
+        close_sync_log(log);
+        return 0;
+    }
 
     struct video_header vh = decode_video_header(video_file);
     decode_video_reset();
@@ -208,6 +222,7 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
     if (frame_count <= 0) {
         fclose(video_file);
         decode_video_free();
+        close_sync_log(log);
         return 0;
     }
 
@@ -215,6 +230,7 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
     if (!audio_load_wav(audio_path, &total_samples)) {
         fclose(video_file);
         decode_video_free();
+        close_sync_log(log);
         return 0;
     }
 
@@ -231,6 +247,7 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
         audio_stop();
         fclose(video_file);
         decode_video_free();
+        close_sync_log(log);
         return 0;
     }
 
@@ -271,27 +288,19 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
             break;
         }
 
-        //Test
-        //audio_update();
-		//int current_sample = (int)frame_index[frame];
-		
 		audio_update();
-
 		raw_sample = audio_get_position();
 		current_sample = raw_sample;
 		
 		usleep(1000);
 		
 		debug_now = uclock();
-
 		if (debug_last == 0)
 			debug_last = debug_now;
 
 		if (debug_now - debug_last >= UCLOCKS_PER_SEC) {
-
 			if (log) {
 				next_index = 0;
-
 				if (frame + 1 < frame_count)
 					next_index = (unsigned long)frame_index[frame + 1];
 
@@ -302,15 +311,11 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
 					target_frame,
 					raw_sample,
 					next_index);
-
 				fflush(log);
 			}
-
 			debug_last = debug_now;
 		}
 		
-		
-        /* Piste audio terminee : on affiche directement la fin de la video */
         if (current_sample < 0) current_sample = 0x7FFFFFFF;
 
         while (target_frame < frame_count - 1 && frame_index[target_frame + 1] <= (uint32_t)current_sample) {
@@ -325,7 +330,6 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
             continue;
         }
 
-        /* Images en retard : decodees sans affichage (flux LZ4 continu) */
         while (frame < target_frame && frame < frame_count) {
             decode_video_frame(video_file, frame, palette_data, palette_sizes, video_data);
             frame++;
@@ -335,16 +339,6 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
 
         decode_video_frame(video_file, frame, palette_data, palette_sizes, video_data);
 
-        /* Attente du debut du retrace vertical */
-       // while (inportb(0x3DA) & 0x08);
-       // while (!(inportb(0x3DA) & 0x08));
-
-       // set_vga_palette(palette_data);
-
-        /* Copie vers la memoire video (pas besoin de nearptr) */
-        //dosmemput(video_data, 320 * 200, 0xA0000);
-        
-        /* Attendre le debut du retrace vertical */
 		while (inportb(0x3DA) & 0x08);
 		while (!(inportb(0x3DA) & 0x08));
 
@@ -360,23 +354,23 @@ int play_lz4_cinematic(const char *video_path, const char *audio_path) {
     decode_video_free();
 
     while (kbhit()) getch();   /* vide le buffer clavier */
-
     set_text_mode();
     
-    if (log) {
-		fprintf(log, "Fin de lecture\n");
-		fclose(log);
-	}
+    /* Utilisation de la fonction dédiée pour la fermeture normale */
+    close_sync_log(log);
     
     return skipped;
 }
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: VGAPLAY.EXE <filename> [options]\n");
+        printf("VGAPLAY :Usage: VGAPLAY.EXE <filename> [options]\n");
         return 1;
     }
-
+	if (argc >= 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+		printf("VGAPLAY version 1.4\n");
+		return 0;
+	}
     char base_name[100];
     strncpy(base_name, argv[1], sizeof(base_name) - 1);
     base_name[sizeof(base_name) - 1] = '\0';
@@ -403,9 +397,18 @@ int main(int argc, char *argv[]) {
     sprintf(video_filename, "%s.BIN", base_name);
     sprintf(audio_filename, "%s.WAV", base_name);
 
+	/* Vérifier si l'option -log est présente dans les arguments */
+    int enable_log = 0;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "-log") == 0) {
+            enable_log = 1;
+            break;
+        }
+    }
+
     if (file_ok(video_filename) && file_ok(audio_filename)) {
-		printf("[TRACE] Lancement de la cinematique...\n"); fflush(stdout); // Ligne témoin
-        play_lz4_cinematic(video_filename, audio_filename);
+		printf("[TRACE] Lancement de la cinematique...\n"); fflush(stdout);
+        play_lz4_cinematic(video_filename, audio_filename, enable_log);
     } else {
         printf("Error: Video file (%s) or audio file (%s) not found!\n", video_filename, audio_filename);
         return 1;

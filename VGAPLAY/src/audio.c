@@ -1,6 +1,8 @@
 /*
- * audio.c - Pilotes audio natifs pour DJGPP / MS-DOS (aucune dependance Allegro)
+ *	  audio.c - Pilotes audio natifs pour DJGPP / MS-DOS
  *
+ *    Distributed under the MIT License. See README.TXT for details.
+ * 
  *  - AC'97 (Intel ICH) via PCI + bus mastering (liste BDL)
  *  - Sound Blaster 16 via DMA 16 bits auto-init
  *  - Mode muet : la position est fournie par l'horloge (uclock)

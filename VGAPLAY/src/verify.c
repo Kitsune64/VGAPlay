@@ -1,5 +1,6 @@
-/*
- * verify.c
+/* verify.c from VGAPLAY 1.4 by Kitsune64 on Github.
+ * 
+ * File output: VERIFMOV.EXE for VGAPLAY (DOS)
  *
  *  Distributed under the MIT License. See README.TXT for details.
  */
@@ -15,9 +16,14 @@
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        printf("Usage: VERIFY.EXE <path_to_video.bin>\n");
+        printf("Usage: VVERIFMOV.EXE <path_to_video.bin>\n");
         return 1;
     }
+    
+    if (argc >= 2 && (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0)) {
+		printf("VERIFMOV version 1.4\n");
+		return 0;
+	}
 
     const char *video_path = argv[1];
     FILE *file = fopen(video_path, "rb");
