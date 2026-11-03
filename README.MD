@@ -194,6 +194,7 @@ The VGAPlay project aggregates components under permissive, compatible open-sour
 
 ```text
 Copyright (c) 2026 Kitsune64 on GitHub
+Copyright (c) 2026 Netdex on Github
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
